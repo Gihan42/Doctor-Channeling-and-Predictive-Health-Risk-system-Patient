@@ -201,16 +201,16 @@ Please provide personalized advice based on this risk assessment.`;
             </div>
 
             {/* Chat Response Section */}
-            <div className="mt-2 text-center border-black border-2 p-6">
+            <div className="mt-2 text-center p-6">
               {isLoading ? (
                   <div className="flex justify-center items-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                     <span className="ml-2">Getting personalized advice...</span>
                   </div>
               ) : chatResponse ? (
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Personalized Advice</h3>
-                    <p className="text-gray-700">{chatResponse}</p>
+                  <div className="max-h-64 overflow-y-auto"> {/* Added max height and scroll */}
+                    <h3 className="text-lg font-semibold mb-2 sticky top-0 bg-white py-2">Personalized Advice</h3>
+                    <p className="text-gray-700 text-left p-2">{chatResponse}</p>
                   </div>
               ) : (
                   <div>
