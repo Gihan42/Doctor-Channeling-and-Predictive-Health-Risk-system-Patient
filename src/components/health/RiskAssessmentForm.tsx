@@ -1,59 +1,168 @@
-import  { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, AlertCircleIcon } from 'lucide-react';
+import { ChevronRight, AlertCircle } from 'lucide-react';
+
 const RiskAssessmentForm = () => {
   const navigate = useNavigate();
   const [assessmentType, setAssessmentType] = useState<'heart' | 'cancer' | null>(null);
   const [step, setStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    // Common fields
     age: '',
     gender: '',
     familyHistory: '',
     smoking: '',
-    // Heart specific
-    bloodPressure: '',
-    cholesterol: '',
-    diabetes: '',
+    bmi: '',
+    geneticRisk: '',
     physicalActivity: '',
-    // Cancer specific
+    alcoholIntake: '',
+    cancerHistory: '',
     sunExposure: '',
-    alcohol: '',
     diet: '',
     previousCancer: ''
   });
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const {
-      name,
-      value
-    } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
   };
+
   const handleTypeSelect = (type: 'heart' | 'cancer') => {
     setAssessmentType(type);
     setStep(2);
   };
-  const handleSubmit = (e: React.FormEvent) => {
+
+  // Mapping functions
+  const mapBmi = (bmiOption: string): number => {
+    switch(bmiOption) {
+      case 'underweight': return 17;
+      case 'normal': return 22;
+      case 'overweight': return 27.5;
+      case 'obese': return 32;
+      case 'unknown': return 26;
+      default: return 25;
+    }
+  };
+
+  const mapSmoking = (smokingOption: string): number => {
+    switch(smokingOption) {
+      case 'never': return 0;
+      case 'former': return 1;
+      case 'current': return 2;
+      default: return 0;
+    }
+  };
+
+  const mapGeneticRisk = (riskOption: string): number => {
+    switch(riskOption) {
+      case 'none': return 0;
+      case 'distant': return 1;
+      case 'close': return 2;
+      case 'multiple': return 3;
+      case 'genetic-mutation': return 4;
+      case 'unknown': return 1;
+      default: return 0;
+    }
+  };
+
+  const mapPhysicalActivity = (activityOption: string): number => {
+    switch(activityOption) {
+      case 'sedentary': return 0;
+      case 'light': return 1;
+      case 'moderate': return 2;
+      case 'vigorous': return 3;
+      default: return 0;
+    }
+  };
+
+  const mapAlcoholIntake = (alcoholOption: string): number => {
+    switch(alcoholOption) {
+      case 'none': return 0;
+      case 'occasional': return 0.5;
+      case 'light': return 1;
+      case 'moderate': return 2;
+      case 'heavy': return 4;
+      case 'binge': return 3;
+      default: return 0;
+    }
+  };
+
+  const mapCancerHistory = (historyOption: string): number => {
+    switch(historyOption) {
+      case 'none': return 0;
+      case 'benign': return 1;
+      case 'cancer-treated': return 2;
+      case 'cancer-ongoing': return 3;
+      case 'precancerous': return 1;
+      default: return 0;
+    }
+  };
+
+  const prepareCancerData = () => {
+    return {
+      Age: parseInt(formData.age) || 30,
+      Gender: formData.gender === "2" ? 0 : 1, // 1 for male, 0 for female
+      BMI: mapBmi(formData.bmi),
+      Smoking: mapSmoking(formData.smoking),
+      GeneticRisk: mapGeneticRisk(formData.geneticRisk),
+      PhysicalActivity: mapPhysicalActivity(formData.physicalActivity),
+      AlcoholIntake: mapAlcoholIntake(formData.alcoholIntake),
+      CancerHistory: mapCancerHistory(formData.cancerHistory)
+    };
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would process the data here
-    // For now, we'll just navigate to the results page
-    navigate('/risk-result', {
-      state: {
-        type: assessmentType,
-        riskLevel: calculateRiskLevel(),
-        formData
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      let apiUrl = '';
+      let requestData = {};
+
+      if (assessmentType === 'cancer') {
+        apiUrl = 'http://localhost:8080/api/v1/ml/predict/cancer';
+        requestData = prepareCancerData();
+      } else {
+        // Handle heart disease prediction if needed
+        throw new Error('Heart disease prediction not implemented');
       }
-    });
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      navigate('/risk-result', {
+        state: {
+          type: assessmentType,
+          prediction: data.prediction,
+          probability: data.probability,
+          interpretation: data.interpretation, // Pass the interpretation directly
+          formData: formData
+        }
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      console.error('Prediction error:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
-  const calculateRiskLevel = () => {
-    // This is a simplified mock calculation
-    // In a real app, this would use actual medical algorithms
-    const riskLevels = ['low', 'medium', 'high'];
-    return riskLevels[Math.floor(Math.random() * 3)];
-  };
+
   const goBack = () => {
     if (step > 1) {
       setStep(step - 1);
@@ -62,247 +171,264 @@ const RiskAssessmentForm = () => {
       }
     }
   };
-  return <div>
-      {step === 1 && <div className="text-center">
-          <h3 className="text-xl font-semibold mb-6 text-gray-800">
-            What would you like to assess?
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button onClick={() => handleTypeSelect('heart')} className="flex items-center justify-center p-6 border-2 border-teal-200 rounded-xl hover:bg-teal-50 transition-colors">
-              <div className="text-center">
-                <div className="bg-teal-100 p-3 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <svg className="h-8 w-8 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
+
+  return (
+      <div>
+        {step === 1 && (
+            <div className="text-center">
+              <h3 className="text-xl font-semibold mb-6 text-gray-800">
+                What would you like to assess?
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button
+                    onClick={() => handleTypeSelect('heart')}
+                    className="flex items-center justify-center p-6 border-2 border-teal-200 rounded-xl hover:bg-teal-50 transition-colors"
+                >
+                  <div className="text-center">
+                    <div className="bg-teal-100 p-3 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                      <svg className="h-8 w-8 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                    </div>
+                    <h4 className="text-lg font-medium text-gray-800">
+                      Heart Disease Risk
+                    </h4>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Assess your risk factors for heart attack and cardiovascular diseases
+                    </p>
+                  </div>
+                </button>
+                <button
+                    onClick={() => handleTypeSelect('cancer')}
+                    className="flex items-center justify-center p-6 border-2 border-purple-200 rounded-xl hover:bg-purple-50 transition-colors"
+                >
+                  <div className="text-center">
+                    <div className="bg-purple-100 p-3 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                      <svg className="h-8 w-8 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <h4 className="text-lg font-medium text-gray-800">
+                      Cancer Risk
+                    </h4>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Evaluate your risk factors for various types of cancer
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </div>
+        )}
+
+        {step === 2 && (
+            <form onSubmit={handleSubmit}>
+              <div className="mb-6">
+                <button
+                    type="button"
+                    onClick={goBack}
+                    className="text-teal-500 flex items-center mb-4"
+                >
+                  <ChevronRight className="h-4 w-4 transform rotate-180 mr-1" />
+                  Back
+                </button>
+                <h3 className="text-xl font-semibold mb-4 text-gray-800">
+                  {assessmentType === 'heart' ? 'Heart Disease Risk Assessment' : 'Cancer Risk Assessment'}
+                </h3>
+                <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6">
+                  <div className="flex">
+                    <AlertCircle className="h-5 w-5 text-amber-500 mr-2" />
+                    <p className="text-sm text-amber-700">
+                      This assessment is for informational purposes only and does not replace professional medical advice.
+                    </p>
+                  </div>
                 </div>
-                <h4 className="text-lg font-medium text-gray-800">
-                  Heart Disease Risk
-                </h4>
-                <p className="text-sm text-gray-500 mt-2">
-                  Assess your risk factors for heart attack and cardiovascular
-                  diseases
-                </p>
               </div>
-            </button>
-            <button onClick={() => handleTypeSelect('cancer')} className="flex items-center justify-center p-6 border-2 border-purple-200 rounded-xl hover:bg-purple-50 transition-colors">
-              <div className="text-center">
-                <div className="bg-purple-100 p-3 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <svg className="h-8 w-8 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h4 className="text-lg font-medium text-gray-800">
-                  Cancer Risk
-                </h4>
-                <p className="text-sm text-gray-500 mt-2">
-                  Evaluate your risk factors for various types of cancer
-                </p>
-              </div>
-            </button>
-          </div>
-        </div>}
-      {step === 2 && <form onSubmit={handleSubmit}>
-          <div className="mb-6">
-            <button type="button" onClick={goBack} className="text-teal-500 flex items-center mb-4">
-              <ChevronRight className="h-4 w-4 transform rotate-180 mr-1" />
-              Back
-            </button>
-            <h3 className="text-xl font-semibold mb-4 text-gray-800">
-              {assessmentType === 'heart' ? 'Heart Disease Risk Assessment' : 'Cancer Risk Assessment'}
-            </h3>
-            <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6">
-              <div className="flex">
-                <AlertCircleIcon className="h-5 w-5 text-amber-500 mr-2" />
-                <p className="text-sm text-amber-700">
-                  This assessment is for informational purposes only and does
-                  not replace professional medical advice.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="space-y-6">
-            {/* Common Questions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Age
-                </label>
-                <select name="age" value={formData.age} onChange={handleInputChange} required className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                  <option value="">Select age range</option>
-                  <option value="18-30">18-30 years</option>
-                  <option value="31-40">31-40 years</option>
-                  <option value="41-50">41-50 years</option>
-                  <option value="51-60">51-60 years</option>
-                  <option value="61+">61+ years</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Gender
-                </label>
-                <select name="gender" value={formData.gender} onChange={handleInputChange} required className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                  <option value="">Select gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Family History
-              </label>
-              <select name="familyHistory" value={formData.familyHistory} onChange={handleInputChange} required className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                <option value="">Select option</option>
-                <option value="yes">
-                  Yes, family history of{' '}
-                  {assessmentType === 'heart' ? 'heart disease' : 'cancer'}
-                </option>
-                <option value="no">No family history</option>
-                <option value="unknown">Unknown</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Smoking Status
-              </label>
-              <select name="smoking" value={formData.smoking} onChange={handleInputChange} required className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                <option value="">Select option</option>
-                <option value="never">Never smoked</option>
-                <option value="former">Former smoker</option>
-                <option value="current">Current smoker</option>
-              </select>
-            </div>
-            {/* Heart Disease Specific Questions */}
-            {assessmentType === 'heart' && <>
+
+              {error && (
+                  <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+                    <div className="flex">
+                      <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                      <p className="text-sm text-red-700">
+                        {error}
+                      </p>
+                    </div>
+                  </div>
+              )}
+
+              <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Blood Pressure
+                      Age
                     </label>
-                    <select name="bloodPressure" value={formData.bloodPressure} onChange={handleInputChange} required className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                      <option value="">Select option</option>
-                      <option value="normal">
-                        Normal (less than 120/80 mm Hg)
-                      </option>
-                      <option value="elevated">
-                        Elevated (120-129/less than 80 mm Hg)
-                      </option>
-                      <option value="high">
-                        High (130/80 mm Hg or higher)
-                      </option>
-                      <option value="unknown">I don't know</option>
-                    </select>
+                    <input
+                        type="number"
+                        name="age"
+                        value={formData.age}
+                        onChange={handleInputChange}
+                        required
+                        min="18"
+                        max="120"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Cholesterol Level
+                      Gender
                     </label>
-                    <select name="cholesterol" value={formData.cholesterol} onChange={handleInputChange} required className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                      <option value="">Select option</option>
-                      <option value="normal">Normal</option>
-                      <option value="borderline">Borderline high</option>
-                      <option value="high">High</option>
-                      <option value="unknown">I don't know</option>
+                    <select
+                        name="gender"
+                        value={formData.gender}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    >
+                      <option value="">Select gender</option>
+                      <option value="1">Male</option>
+                      <option value="2">Female</option>
                     </select>
                   </div>
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Diabetes Status
+                    Smoking Status
                   </label>
-                  <select name="diabetes" value={formData.diabetes} onChange={handleInputChange} required className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                  <select
+                      name="smoking"
+                      value={formData.smoking}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  >
                     <option value="">Select option</option>
-                    <option value="no">No diabetes</option>
-                    <option value="prediabetes">Prediabetes</option>
-                    <option value="type1">Type 1 diabetes</option>
-                    <option value="type2">Type 2 diabetes</option>
+                    <option value="never">Never smoked</option>
+                    <option value="former">Former smoker</option>
+                    <option value="current">Current smoker</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Physical Activity Level
-                  </label>
-                  <select name="physicalActivity" value={formData.physicalActivity} onChange={handleInputChange} required className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                    <option value="">Select option</option>
-                    <option value="inactive">
-                      Inactive (little to no exercise)
-                    </option>
-                    <option value="light">
-                      Light activity (1-2 days/week)
-                    </option>
-                    <option value="moderate">
-                      Moderate activity (3-5 days/week)
-                    </option>
-                    <option value="high">High activity (6-7 days/week)</option>
-                  </select>
-                </div>
-              </>}
-            {/* Cancer Specific Questions */}
-            {assessmentType === 'cancer' && <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Sun Exposure
-                  </label>
-                  <select name="sunExposure" value={formData.sunExposure} onChange={handleInputChange} required className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                    <option value="">Select option</option>
-                    <option value="low">Low (rarely outdoors)</option>
-                    <option value="moderate">
-                      Moderate (sometimes outdoors)
-                    </option>
-                    <option value="high">
-                      High (frequently outdoors without protection)
-                    </option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Alcohol Consumption
-                  </label>
-                  <select name="alcohol" value={formData.alcohol} onChange={handleInputChange} required className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                    <option value="">Select option</option>
-                    <option value="none">None</option>
-                    <option value="light">Light (≤1 drink/day)</option>
-                    <option value="moderate">Moderate (2-3 drinks/day)</option>
-                    <option value="heavy">Heavy (≥4 drinks/day)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Diet
-                  </label>
-                  <select name="diet" value={formData.diet} onChange={handleInputChange} required className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                    <option value="">Select option</option>
-                    <option value="healthy">
-                      Healthy (plenty of fruits, vegetables, whole grains)
-                    </option>
-                    <option value="average">
-                      Average (balanced diet with some processed foods)
-                    </option>
-                    <option value="poor">
-                      Poor (high in processed foods, red meat, low in
-                      fruits/vegetables)
-                    </option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Previous Cancer Diagnosis
-                  </label>
-                  <select name="previousCancer" value={formData.previousCancer} onChange={handleInputChange} required className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                    <option value="">Select option</option>
-                    <option value="yes">Yes</option>
-                    <option value="no">No</option>
-                  </select>
-                </div>
-              </>}
-          </div>
-          <div className="mt-8">
-            <button type="submit" className="w-full py-3 px-4 bg-gradient-to-r from-teal-400 to-teal-500 text-white font-medium rounded-lg hover:from-teal-500 hover:to-teal-600 shadow-sm transition-all">
-              Get My Results
-            </button>
-          </div>
-        </form>}
-    </div>;
+
+                {assessmentType === 'cancer' && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          BMI (Body Mass Index)
+                        </label>
+                        <select
+                            name="bmi"
+                            value={formData.bmi}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        >
+                          <option value="">Select BMI range</option>
+                          <option value="underweight">Underweight (BMI &lt; 18.5)</option>
+                          <option value="normal">Normal weight (BMI 18.5-24.9)</option>
+                          <option value="overweight">Overweight (BMI 25-29.9)</option>
+                          <option value="obese">Obese (BMI ≥ 30)</option>
+                          <option value="unknown">I don't know my BMI</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Genetic Risk / Family History
+                        </label>
+                        <select
+                            name="geneticRisk"
+                            value={formData.geneticRisk}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        >
+                          <option value="">Select option</option>
+                          <option value="none">No known family history of cancer</option>
+                          <option value="distant">Distant relatives with cancer</option>
+                          <option value="close">Close relatives with cancer (parents, siblings)</option>
+                          <option value="multiple">Multiple family members with cancer</option>
+                          <option value="genetic-mutation">Known genetic mutation (BRCA, etc.)</option>
+                          <option value="unknown">Unknown family history</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Physical Activity Level
+                        </label>
+                        <select
+                            name="physicalActivity"
+                            value={formData.physicalActivity}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        >
+                          <option value="">Select activity level</option>
+                          <option value="sedentary">Sedentary (little to no exercise)</option>
+                          <option value="light">Light activity (1-2 days/week)</option>
+                          <option value="moderate">Moderate activity (3-5 days/week)</option>
+                          <option value="vigorous">Vigorous activity (6-7 days/week)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Alcohol Intake
+                        </label>
+                        <select
+                            name="alcoholIntake"
+                            value={formData.alcoholIntake}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        >
+                          <option value="">Select alcohol consumption</option>
+                          <option value="none">None / Never drink alcohol</option>
+                          <option value="occasional">Occasional (1-2 drinks per week)</option>
+                          <option value="light">Light (≤1 drink per day)</option>
+                          <option value="moderate">Moderate (2-3 drinks per day)</option>
+                          <option value="heavy">Heavy (≥4 drinks per day)</option>
+                          <option value="binge">Binge drinking pattern</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Cancer History
+                        </label>
+                        <select
+                            name="cancerHistory"
+                            value={formData.cancerHistory}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        >
+                          <option value="">Select option</option>
+                          <option value="none">No previous cancer diagnosis</option>
+                          <option value="benign">Previous benign tumors only</option>
+                          <option value="cancer-treated">Previous cancer diagnosis (treated)</option>
+                          <option value="cancer-ongoing">Current cancer treatment</option>
+                          <option value="precancerous">Previous precancerous conditions</option>
+                        </select>
+                      </div>
+                    </>
+                )}
+              </div>
+
+              <div className="mt-8">
+                <button
+                    type="submit"
+                    disabled={isLoading}
+                    className={`w-full py-3 px-4 bg-gradient-to-r from-teal-400 to-teal-500 text-white font-medium rounded-lg hover:from-teal-500 hover:to-teal-600 shadow-sm transition-all ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                >
+                  {isLoading ? 'Processing...' : 'Get My Results'}
+                </button>
+              </div>
+            </form>
+        )}
+
+
+      </div>
+  );
 };
+
 export default RiskAssessmentForm;
