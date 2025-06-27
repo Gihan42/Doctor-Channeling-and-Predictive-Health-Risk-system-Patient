@@ -1,6 +1,12 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AlertCircleIcon, CheckCircleIcon, XCircleIcon, MessageSquareIcon, UserPlusIcon } from 'lucide-react';
-import { useState } from 'react';
+import {
+  AlertCircleIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  MessageSquareIcon,
+  UserPlusIcon,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const RiskResultPage = () => {
   const location = useLocation();
@@ -8,59 +14,93 @@ const RiskResultPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [chatResponse, setChatResponse] = useState('');
   const [error, setError] = useState('');
+  const [isTokenValid, setIsTokenValid] = useState(false);
 
   // Get risk data from location state
   const {
     type = 'heart',
-    interpretation = 'Low risk of cancer detected', // Default if not provided
+    interpretation = 'Low risk of cancer detected',
     prediction,
-    probability
+    probability,
   } = location.state || {};
 
-  // Content based on risk type
   const diseaseType = type === 'heart' ? 'Heart Disease' : 'Cancer';
 
-  // Determine risk level based on interpretation
   const getRiskLevel = (interpretation: string) => {
     if (interpretation.toLowerCase().includes('low')) return 'low';
-    if (interpretation.toLowerCase().includes('medium') || interpretation.toLowerCase().includes('moderate')) return 'medium';
+    if (
+        interpretation.toLowerCase().includes('medium') ||
+        interpretation.toLowerCase().includes('moderate')
+    )
+      return 'medium';
     if (interpretation.toLowerCase().includes('high')) return 'high';
-    return 'medium'; // Default if not matched
+    return 'medium';
   };
 
   const riskLevel = getRiskLevel(interpretation);
 
-  // Risk level content
   const riskContent = {
     low: {
       title: 'Low Risk',
       color: 'green',
       icon: <CheckCircleIcon className="h-12 w-12 text-green-500" />,
-      description: interpretation, // Use the interpretation directly
-      recommendations: ['Continue with regular check-ups', 'Maintain a healthy lifestyle', 'Stay physically active', 'Eat a balanced diet']
+      description: interpretation,
+      recommendations: [
+        'Continue with regular check-ups',
+        'Maintain a healthy lifestyle',
+        'Stay physically active',
+        'Eat a balanced diet',
+      ],
     },
     medium: {
       title: 'Medium Risk',
       color: 'yellow',
       icon: <AlertCircleIcon className="h-12 w-12 text-yellow-500" />,
-      description: interpretation, // Use the interpretation directly
-      recommendations: ['Schedule a check-up with your doctor', 'Consider lifestyle modifications', 'Monitor your symptoms', 'Follow preventive measures']
+      description: interpretation,
+      recommendations: [
+        'Schedule a check-up with your doctor',
+        'Consider lifestyle modifications',
+        'Monitor your symptoms',
+        'Follow preventive measures',
+      ],
     },
     high: {
       title: 'High Risk',
       color: 'red',
       icon: <XCircleIcon className="h-12 w-12 text-red-500" />,
-      description: interpretation, // Use the interpretation directly
-      recommendations: ['Consult with a healthcare provider as soon as possible', 'Follow specific medical advice', 'Make immediate lifestyle changes', 'Consider more frequent screenings']
-    }
+      description: interpretation,
+      recommendations: [
+        'Consult with a healthcare provider as soon as possible',
+        'Follow specific medical advice',
+        'Make immediate lifestyle changes',
+        'Consider more frequent screenings',
+      ],
+    },
   };
 
   const currentRisk = riskContent[riskLevel as keyof typeof riskContent];
 
-  // Medications and prevention based on disease type
-  const medications = type === 'heart' ? ['Statins for cholesterol management', 'Blood pressure medications', 'Aspirin therapy (as advised by doctor)'] : ['Preventive medications based on cancer type', 'Immune system boosters', 'Supplements (as advised by doctor)'];
+  const medications =
+      type === 'heart'
+          ? [
+            'Statins for cholesterol management',
+            'Blood pressure medications',
+            'Aspirin therapy (as advised by doctor)',
+          ]
+          : [
+            'Preventive medications based on cancer type',
+            'Immune system boosters',
+            'Supplements (as advised by doctor)',
+          ];
 
-  const preventions = type === 'heart' ? ['Regular cardiovascular exercise', 'Heart-healthy diet low in saturated fats', 'Stress management techniques'] : ['Regular cancer screenings', 'Sun protection', 'Avoiding known carcinogens'];
+  const preventions =
+      type === 'heart'
+          ? [
+            'Regular cardiovascular exercise',
+            'Heart-healthy diet low in saturated fats',
+            'Stress management techniques',
+          ]
+          : ['Regular cancer screenings', 'Sun protection', 'Avoiding known carcinogens'];
 
   const generateChatPrompt = () => {
     return `Patient's ${diseaseType} Risk Assessment Results:
@@ -87,9 +127,9 @@ Please provide personalized advice based on this risk assessment.`;
           messages: [
             {
               role: 'user',
-              content: prompt
-            }
-          ]
+              content: prompt,
+            },
+          ],
         }),
       });
 
@@ -107,6 +147,39 @@ Please provide personalized advice based on this risk assessment.`;
     }
   };
 
+  // Validate token on component mount
+  useEffect(() => {
+    const validateToken = () => {
+      try {
+        const token = localStorage.getItem('jwt');
+        if (!token) return setIsTokenValid(false);
+
+        const tokenParts = token.split('.');
+        if (tokenParts.length !== 3) return setIsTokenValid(false);
+
+        const payload = JSON.parse(atob(tokenParts[1]));
+        const currentTime = Date.now() / 1000;
+
+        if (payload.exp && payload.exp < currentTime) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('jwt');
+          localStorage.removeItem('authToken');
+          return setIsTokenValid(false);
+        }
+
+        setIsTokenValid(true);
+      } catch (err) {
+        console.error('Error validating token:', err);
+        localStorage.removeItem('token');
+        localStorage.removeItem('jwt');
+        localStorage.removeItem('authToken');
+        setIsTokenValid(false);
+      }
+    };
+
+    validateToken();
+  }, []);
+
   return (
       <div className="bg-gray-50 min-h-screen py-12 mt-14">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -121,7 +194,7 @@ Please provide personalized advice based on this risk assessment.`;
               </div>
             </div>
 
-            {/* Risk Level */}
+            {/* Risk Info */}
             <div className="px-6 py-8 border-b">
               <div className="flex flex-col md:flex-row md:items-center">
                 <div className="flex-shrink-0 flex items-center justify-center">
@@ -134,19 +207,17 @@ Please provide personalized advice based on this risk assessment.`;
                     {currentRisk.title}
                   </h2>
                   <p className="mt-2 text-gray-600">{currentRisk.description}</p>
-                  {/* Additional stats if available */}
                   {prediction !== undefined && (
                       <p className="mt-2 text-sm text-gray-500">
-                        Prediction: {prediction === 0 ? 'Negative' : 'Positive'} |
-                        Probability: {(probability * 100).toFixed(2)}%
+                        Prediction: {prediction === 0 ? 'Negative' : 'Positive'} | Probability:{' '}
+                        {(probability * 100).toFixed(2)}%
                       </p>
                   )}
                   <div className="mt-4">
                     <p className="font-medium text-gray-700">Important Note:</p>
                     <p className="text-sm text-gray-500">
-                      This assessment is for informational purposes only and does
-                      not constitute medical advice. Please consult with a
-                      healthcare professional for proper diagnosis and treatment.
+                      This assessment is for informational purposes only. Please consult a
+                      healthcare professional for diagnosis and treatment.
                     </p>
                   </div>
                 </div>
@@ -169,9 +240,7 @@ Please provide personalized advice based on this risk assessment.`;
             {/* Prevention & Medications */}
             <div className="grid grid-cols-1 md:grid-cols-2">
               <div className="px-6 py-6 border-b md:border-r">
-                <h3 className="text-lg font-semibold mb-4">
-                  Preventive Measures
-                </h3>
+                <h3 className="text-lg font-semibold mb-4">Preventive Measures</h3>
                 <ul className="space-y-2">
                   {preventions.map((prevention, index) => (
                       <li key={index} className="flex items-start">
@@ -182,9 +251,7 @@ Please provide personalized advice based on this risk assessment.`;
                 </ul>
               </div>
               <div className="px-6 py-6 border-b">
-                <h3 className="text-lg font-semibold mb-4">
-                  Suggested Medications
-                </h3>
+                <h3 className="text-lg font-semibold mb-4">Suggested Medications</h3>
                 <ul className="space-y-2">
                   {medications.map((medication, index) => (
                       <li key={index} className="flex items-start">
@@ -193,14 +260,13 @@ Please provide personalized advice based on this risk assessment.`;
                       </li>
                   ))}
                   <li className="text-sm text-gray-500 italic mt-2">
-                    Always consult with a healthcare provider before starting any
-                    medication.
+                    Always consult a doctor before starting medication.
                   </li>
                 </ul>
               </div>
             </div>
 
-            {/* Chat Response Section */}
+            {/* Chat Response */}
             <div className="mt-2 text-center p-6">
               {isLoading ? (
                   <div className="flex justify-center items-center">
@@ -208,14 +274,18 @@ Please provide personalized advice based on this risk assessment.`;
                     <span className="ml-2">Getting personalized advice...</span>
                   </div>
               ) : chatResponse ? (
-                  <div className="max-h-64 overflow-y-auto"> {/* Added max height and scroll */}
-                    <h3 className="text-lg font-semibold mb-2 sticky top-0 bg-white py-2">Personalized Advice</h3>
+                  <div className="max-h-64 overflow-y-auto">
+                    <h3 className="text-lg font-semibold mb-2 sticky top-0 bg-white py-2">
+                      Personalized Advice
+                    </h3>
                     <p className="text-gray-700 text-left p-2">{chatResponse}</p>
                   </div>
               ) : (
                   <div>
                     <h3 className="text-lg font-semibold mb-2">Get Personalized Advice</h3>
-                    <p className="text-gray-500 mb-4">Click the button below to get AI-generated advice based on your risk assessment</p>
+                    <p className="text-gray-500 mb-4">
+                      Click below to get AI-generated advice based on your risk.
+                    </p>
                     <button
                         onClick={getChatResponse}
                         className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
@@ -227,7 +297,7 @@ Please provide personalized advice based on this risk assessment.`;
               {error && <p className="text-red-500 mt-2">{error}</p>}
             </div>
 
-            {/* Actions */}
+            {/* Next Steps */}
             <div className="px-6 py-8">
               <h3 className="text-lg font-semibold mb-6">Next Steps</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -239,7 +309,7 @@ Please provide personalized advice based on this risk assessment.`;
                   Ask Our Health Assistant
                 </button>
                 <button
-                    onClick={() => navigate('/register')}
+                    onClick={() => navigate(isTokenValid ? '/dashboard' : '/register')}
                     className="flex items-center justify-center px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
                 >
                   <UserPlusIcon className="h-5 w-5 mr-2" />
@@ -248,6 +318,7 @@ Please provide personalized advice based on this risk assessment.`;
               </div>
             </div>
           </div>
+
           <div className="mt-8 text-center">
             <button
                 onClick={() => navigate('/')}
