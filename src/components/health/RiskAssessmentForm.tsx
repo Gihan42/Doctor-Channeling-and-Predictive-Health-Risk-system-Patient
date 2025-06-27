@@ -9,8 +9,11 @@ const RiskAssessmentForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
+    // Common fields
     age: '',
     gender: '',
+
+    // Cancer specific fields
     familyHistory: '',
     smoking: '',
     bmi: '',
@@ -20,7 +23,20 @@ const RiskAssessmentForm = () => {
     cancerHistory: '',
     sunExposure: '',
     diet: '',
-    previousCancer: ''
+    previousCancer: '',
+
+    // Heart disease specific fields
+    chestPainType: '',
+    restingBP: '',
+    cholesterol: '',
+    fastingBloodSugar: '',
+    restingECG: '',
+    maxHeartRate: '',
+    exerciseAngina: '',
+    stDepression: '',
+    stSlope: '',
+    majorVessels: '',
+    thalassemia: ''
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -36,7 +52,7 @@ const RiskAssessmentForm = () => {
     setStep(2);
   };
 
-  // Mapping functions
+  // Mapping functions for cancer
   const mapBmi = (bmiOption: string): number => {
     switch(bmiOption) {
       case 'underweight': return 17;
@@ -115,6 +131,24 @@ const RiskAssessmentForm = () => {
     };
   };
 
+  const prepareHeartData = () => {
+    return {
+      age: parseInt(formData.age) || 50,
+      sex: formData.gender === "2" ? 0 : 1, // 1 = male, 0 = female
+      cp: parseInt(formData.chestPainType) || 0, // chest pain type
+      trtbps: parseInt(formData.restingBP) || 120, // ✔ FastAPI expects this
+      chol: parseInt(formData.cholesterol) || 200, // serum cholesterol
+      fbs: parseInt(formData.fastingBloodSugar) || 0, // fasting blood sugar
+      restecg: parseInt(formData.restingECG) || 0, // resting ECG
+      thalach: parseInt(formData.maxHeartRate) || 150, // max heart rate
+      exang: parseInt(formData.exerciseAngina) || 0, // exercise induced angina
+      oldpeak: parseFloat(formData.stDepression) || 0.0, // ST depression
+      slope: parseInt(formData.stSlope) || 1, // slope of ST segment
+      ca: parseInt(formData.majorVessels) || 0, // major vessels
+      thal: parseInt(formData.thalassemia) || 1 // thalassemia
+    };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -127,9 +161,9 @@ const RiskAssessmentForm = () => {
       if (assessmentType === 'cancer') {
         apiUrl = 'http://localhost:8080/api/v1/ml/predict/cancer';
         requestData = prepareCancerData();
-      } else {
-        // Handle heart disease prediction if needed
-        throw new Error('Heart disease prediction not implemented');
+      } else if (assessmentType === 'heart') {
+        apiUrl = 'http://localhost:8080/api/v1/ml/predict/heart-attack';
+        requestData = prepareHeartData();
       }
 
       const response = await fetch(apiUrl, {
@@ -145,13 +179,13 @@ const RiskAssessmentForm = () => {
       }
 
       const data = await response.json();
-
+      console.log(data.prediction)
       navigate('/risk-result', {
         state: {
           type: assessmentType,
           prediction: data.prediction,
           probability: data.probability,
-          interpretation: data.interpretation, // Pass the interpretation directly
+          interpretation: data.interpretation,
           formData: formData
         }
       });
@@ -254,7 +288,6 @@ const RiskAssessmentForm = () => {
                     </div>
                   </div>
               )}
-
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -290,26 +323,26 @@ const RiskAssessmentForm = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Smoking Status
-                  </label>
-                  <select
-                      name="smoking"
-                      value={formData.smoking}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  >
-                    <option value="">Select option</option>
-                    <option value="never">Never smoked</option>
-                    <option value="former">Former smoker</option>
-                    <option value="current">Current smoker</option>
-                  </select>
-                </div>
-
-                {assessmentType === 'cancer' && (
+                {assessmentType === 'cancer' ? (
                     <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Smoking Status
+                        </label>
+                        <select
+                            name="smoking"
+                            value={formData.smoking}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        >
+                          <option value="">Select option</option>
+                          <option value="never">Never smoked</option>
+                          <option value="former">Former smoker</option>
+                          <option value="current">Current smoker</option>
+                        </select>
+                      </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           BMI (Body Mass Index)
@@ -411,6 +444,200 @@ const RiskAssessmentForm = () => {
                         </select>
                       </div>
                     </>
+                ) : (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Chest Pain Type
+                        </label>
+                        <select
+                            name="chestPainType"
+                            value={formData.chestPainType}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        >
+                          <option value="">Select chest pain type</option>
+                          <option value="0">Typical angina</option>
+                          <option value="1">Atypical angina</option>
+                          <option value="2">Non-anginal pain</option>
+                          <option value="3">Asymptomatic</option>
+                        </select>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Resting Blood Pressure (mm Hg)
+                          </label>
+                          <input
+                              type="number"
+                              name="restingBP"
+                              value={formData.restingBP}
+                              onChange={handleInputChange}
+                              required
+                              min="80"
+                              max="200"
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Serum Cholesterol (mg/dl)
+                          </label>
+                          <input
+                              type="number"
+                              name="cholesterol"
+                              value={formData.cholesterol}
+                              onChange={handleInputChange}
+                              required
+                              min="100"
+                              max="600"
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Fasting Blood Sugar &gt; 120 mg/dl
+                        </label>
+                        <select
+                            name="fastingBloodSugar"
+                            value={formData.fastingBloodSugar}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        >
+                          <option value="">Select option</option>
+                          <option value="1">Yes</option>
+                          <option value="0">No</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Resting ECG Results
+                        </label>
+                        <select
+                            name="restingECG"
+                            value={formData.restingECG}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        >
+                          <option value="">Select ECG result</option>
+                          <option value="0">Normal</option>
+                          <option value="1">ST-T wave abnormality</option>
+                          <option value="2">Probable or definite left ventricular hypertrophy</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Maximum Heart Rate Achieved
+                        </label>
+                        <input
+                            type="number"
+                            name="maxHeartRate"
+                            value={formData.maxHeartRate}
+                            onChange={handleInputChange}
+                            required
+                            min="60"
+                            max="220"
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Exercise Induced Angina
+                        </label>
+                        <select
+                            name="exerciseAngina"
+                            value={formData.exerciseAngina}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        >
+                          <option value="">Select option</option>
+                          <option value="1">Yes</option>
+                          <option value="0">No</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          ST Depression Induced by Exercise
+                        </label>
+                        <input
+                            type="number"
+                            name="stDepression"
+                            value={formData.stDepression}
+                            onChange={handleInputChange}
+                            required
+                            step="0.1"
+                            min="0"
+                            max="10"
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Slope of Peak Exercise ST Segment
+                        </label>
+                        <select
+                            name="stSlope"
+                            value={formData.stSlope}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        >
+                          <option value="">Select slope</option>
+                          <option value="0">Upsloping</option>
+                          <option value="1">Flat</option>
+                          <option value="2">Downsloping</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Number of Major Vessels Colored by Fluoroscopy (0-3)
+                        </label>
+                        <select
+                            name="majorVessels"
+                            value={formData.majorVessels}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        >
+                          <option value="">Select number of vessels</option>
+                          <option value="0">0</option>
+                          <option value="1">1</option>
+                          <option value="2">2</option>
+                          <option value="3">3</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Thalassemia
+                        </label>
+                        <select
+                            name="thalassemia"
+                            value={formData.thalassemia}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        >
+                          <option value="">Select thalassemia result</option>
+                          <option value="1">Normal</option>
+                          <option value="2">Fixed defect</option>
+                          <option value="3">Reversible defect</option>
+                        </select>
+                      </div>
+                    </>
                 )}
               </div>
 
@@ -425,8 +652,6 @@ const RiskAssessmentForm = () => {
               </div>
             </form>
         )}
-
-
       </div>
   );
 };
