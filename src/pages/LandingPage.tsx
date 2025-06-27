@@ -1,10 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { Heart, Activity, UserCheck, MessageSquare, Calendar } from 'lucide-react';
 import RiskAssessmentForm from '../components/health/RiskAssessmentForm';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const [isTokenValid, setIsTokenValid] = useState(false);
+  const [isCheckingToken, setIsCheckingToken] = useState(true);
 
   // References for sections to observe
   const sectionRefs = {
@@ -15,7 +17,66 @@ const LandingPage = () => {
     cta: useRef(null),
   };
 
+  // Function to validate JWT token
+  const validateToken = () => {
+    try {
+      const token =  localStorage.getItem('jwt') ;
+
+      if (!token) {
+        setIsTokenValid(false);
+        setIsCheckingToken(false);
+        return;
+      }
+
+      // Decode JWT token to check expiration
+      const tokenParts = token.split('.');
+      if (tokenParts.length !== 3) {
+        setIsTokenValid(false);
+        setIsCheckingToken(false);
+        return;
+      }
+
+      const payload = JSON.parse(atob(tokenParts[1]));
+      const currentTime = Date.now() / 1000;
+
+      // Check if token is expired
+      if (payload.exp && payload.exp < currentTime) {
+        // Token is expired, remove it
+        localStorage.removeItem('token');
+        localStorage.removeItem('jwt');
+        localStorage.removeItem('authToken');
+        setIsTokenValid(false);
+        setIsCheckingToken(false);
+        return;
+      }
+
+      // Token is valid
+      setIsTokenValid(true);
+      setIsCheckingToken(false);
+    } catch (error) {
+      console.error('Error validating token:', error);
+      // If there's an error parsing the token, consider it invalid
+      localStorage.removeItem('token');
+      localStorage.removeItem('jwt');
+      localStorage.removeItem('authToken');
+      setIsTokenValid(false);
+      setIsCheckingToken(false);
+    }
+  };
+
+  // Handle Channel a Doctor button click
+  const handleChannelDoctorClick = () => {
+    if (isTokenValid) {
+      navigate('/dashboard');
+    } else {
+      navigate('/register');
+    }
+  };
+
   useEffect(() => {
+    // Validate token on component mount
+    validateToken();
+
     const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
@@ -75,10 +136,11 @@ const LandingPage = () => {
                     Check My Health
                   </button>
                   <button
-                      onClick={() => navigate('/register')}
-                      className="px-6 py-3 bg-gradient-to-r from-teal-400 to-teal-500 text-white font-medium rounded-lg shadow-sm hover:shadow-md hover:from-teal-500 hover:to-teal-600 transition-all hover:scale-105 hover:-translate-y-1 transform duration-300"
+                      onClick={handleChannelDoctorClick}
+                      disabled={isCheckingToken}
+                      className="px-6 py-3 bg-gradient-to-r from-teal-400 to-teal-500 text-white font-medium rounded-lg shadow-sm hover:shadow-md hover:from-teal-500 hover:to-teal-600 transition-all hover:scale-105 hover:-translate-y-1 transform duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Channel a Doctor
+                    {isCheckingToken ? 'Loading...' : 'Channel a Doctor'}
                   </button>
                 </div>
               </div>
@@ -108,9 +170,7 @@ const LandingPage = () => {
                   Risk Assessment
                 </h3>
                 <p className="text-gray-600">
-                  Check your risk factors for
-
-                  heart disease and cancer with our
+                  Check your risk factors for heart disease and cancer with our
                   AI-powered assessment tool.
                 </p>
               </div>
@@ -239,15 +299,23 @@ const LandingPage = () => {
               Ready to Take Control of Your Health?
             </h2>
             <p className="text-xl mb-8 max-w-3xl mx-auto text-teal-50 animate-fade-in-up animation-delay-200">
-              Register today to book appointments with specialists, track your
-              health progress, and get personalized care.
+              {isTokenValid
+                  ? "Access your dashboard to manage appointments and track your health progress."
+                  : "Register today to book appointments with specialists, track your health progress, and get personalized care."
+              }
             </p>
             <div className="flex flex-wrap justify-center gap-4 animate-fade-in-up animation-delay-400">
               <button
-                  onClick={() => navigate('/register')}
-                  className="px-6 py-3 bg-white text-teal-600 font-medium rounded-lg hover:shadow-md transition-all hover:scale-105 hover:-translate-y-1 transform duration-300"
+                  onClick={handleChannelDoctorClick}
+                  disabled={isCheckingToken}
+                  className="px-6 py-3 bg-white text-teal-600 font-medium rounded-lg hover:shadow-md transition-all hover:scale-105 hover:-translate-y-1 transform duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Create an Account
+                {isCheckingToken
+                    ? 'Loading...'
+                    : isTokenValid
+                        ? 'Go to Dashboard'
+                        : 'Create an Account'
+                }
               </button>
               <button
                   onClick={() => navigate('/chatbot')}

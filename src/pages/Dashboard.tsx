@@ -7,6 +7,9 @@ import AppointmentDetails from '../components/dashboard/AppointmentDetails';
 import UserProfile from '../components/dashboard/UserProfile';
 import PaymentPage from '../components/dashboard/PaymentPage';
 import AppointmentConfirmation from '../components/dashboard/AppointmentConfirmation';
+
+
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const menuItems = [{
@@ -26,7 +29,13 @@ const Dashboard = () => {
     icon: <SettingsIcon className="h-5 w-5" />,
     path: 'profile'
   }];
-  return <div className="bg-gray-50 min-h-screen">
+
+
+
+
+
+
+  return <div className="bg-gray-50 min-h-screen mt-14">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar Navigation */}

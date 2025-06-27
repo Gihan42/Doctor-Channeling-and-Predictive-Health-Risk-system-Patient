@@ -1,8 +1,10 @@
 
 import { useNavigate } from 'react-router-dom';
 import { CalendarIcon, ClockIcon, ArrowRightIcon, BellIcon, AlertCircleIcon } from 'lucide-react';
+import { useEffect,useState  } from 'react';
 const DashboardHome = () => {
   const navigate = useNavigate();
+  const [userName, setUserName] = useState('');
   // Mock upcoming appointments
   const upcomingAppointments = [{
     id: 1,
@@ -21,6 +23,16 @@ const DashboardHome = () => {
     location: 'Cancer Treatment Institute',
     status: 'pending'
   }];
+
+  const fetchDashboardData = () => {
+    const storedName = localStorage.getItem('userName') || 'User';
+    setUserName(storedName);
+    console.log(`Dashboard loaded. Welcome, ${storedName}`);
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
   // Format date
   const formatDate = (dateString: string) => {
     const options: Intl.DateTimeFormatOptions = {
@@ -35,7 +47,7 @@ const DashboardHome = () => {
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Welcome, John</h1>
+            <h1 className="text-2xl font-bold text-gray-800">Welcome, {userName}</h1>
             <p className="text-gray-600 mt-1">
               Here's an overview of your upcoming appointments and health
               status.
