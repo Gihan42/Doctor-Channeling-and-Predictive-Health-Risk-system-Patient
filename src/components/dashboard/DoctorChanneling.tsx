@@ -20,7 +20,7 @@ interface MedicalCenter {
   id: number;
   address: string;
   email: string;
-  medicleCenterId:number;
+  medicleCenterId: number;
   distric: string;
   closeTime: string;
   contact2: string;
@@ -86,6 +86,7 @@ const DoctorChanneling = () => {
   const [medicalCentersError, setMedicalCentersError] = useState('');
   const [nearestCentersError, setNearestCentersError] = useState('');
   const [availableDays, setAvailableDays] = useState<string[]>([]);
+  const [hasMedicalCenters, setHasMedicalCenters] = useState(false);
 
   // Fetch specializations on component mount
   useEffect(() => {
@@ -175,12 +176,14 @@ const DoctorChanneling = () => {
           console.log(data)
           if (data.code === 200 && data.data) {
             setMedicalCenters(data.data);
+            setHasMedicalCenters(data.data.length > 0);
           } else {
             throw new Error(data.message || 'No medical centers found');
           }
         } catch (err) {
           setMedicalCentersError(err instanceof Error ? err.message : 'Failed to load medical centers');
           console.error('Error fetching medical centers:', err);
+          setHasMedicalCenters(false);
         } finally {
           setMedicalCentersLoading(false);
         }
@@ -361,7 +364,6 @@ const DoctorChanneling = () => {
   // Handle medical center selection
   const handleMedicalCenterSelect = (medicleCenterId: number) => {
     console.log(medicleCenterId)
-
 
     const center = medicalCenters.find(center => center.medicleCenterId === medicleCenterId) ||
         nearestCenters.find(center => center.medicleCenterId === medicleCenterId);
@@ -587,7 +589,7 @@ const DoctorChanneling = () => {
                             {nearestCenters.map(center => (
                                 <div
                                     key={center.id}
-                                    onClick={() => handleMedicalCenterSelect(center.id)}
+                                    onClick={() => handleMedicalCenterSelect(center.medicleCenterId)}
                                     className={`p-4 border rounded-lg cursor-pointer hover:bg-blue-50 transition-colors ${selectedMedicalCenter === center.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
                                 >
                                   <h4 className="font-medium">{center.centerName}</h4>
@@ -616,11 +618,17 @@ const DoctorChanneling = () => {
                         </label>
                         <button
                             onClick={handleFindNearestCenters}
-                            className="flex items-center px-4 py-2 border border-blue-500 text-blue-600 rounded-md hover:bg-blue-50"
+                            disabled={!hasMedicalCenters || medicalCentersLoading}
+                            className={`flex items-center px-4 py-2 border rounded-md ${hasMedicalCenters ? 'border-blue-500 text-blue-600 hover:bg-blue-50' : 'border-gray-300 text-gray-400 cursor-not-allowed'}`}
                         >
                           <MapPinIcon className="h-4 w-4 mr-2" />
                           Find Nearest Centers
                         </button>
+                        {!hasMedicalCenters && !medicalCentersLoading && (
+                            <p className="mt-1 text-sm text-gray-500">
+                              No medical centers available for this specialization
+                            </p>
+                        )}
                       </div>
 
                       {medicalCentersLoading ? (
@@ -638,7 +646,7 @@ const DoctorChanneling = () => {
                               Retry
                             </button>
                           </div>
-                      ) : (
+                      ) : hasMedicalCenters ? (
                           <div className="mt-6">
                             <h3 className="text-sm font-medium text-gray-700 mb-2">
                               Available Medical Centers
@@ -649,7 +657,7 @@ const DoctorChanneling = () => {
                                       key={center.id}
                                       onClick={() => {
                                         console.log(center);
-                                        console.log(center.medicleCenterId);// ✅ Logs full center data on click
+                                        console.log(center.medicleCenterId);
                                         handleMedicalCenterSelect(center.medicleCenterId);
                                       }}
                                       className={`p-4 border rounded-lg cursor-pointer hover:bg-blue-50 transition-colors ${selectedMedicalCenter === center.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
@@ -670,6 +678,16 @@ const DoctorChanneling = () => {
                                   </div>
                               ))}
                             </div>
+                          </div>
+                      ) : (
+                          <div className="text-center py-8">
+                            <MapPinIcon className="h-10 w-10 text-gray-400 mx-auto" />
+                            <h3 className="mt-2 text-sm font-medium text-gray-900">
+                              No medical centers available
+                            </h3>
+                            <p className="mt-1 text-sm text-gray-500">
+                              There are no medical centers offering this specialization.
+                            </p>
                           </div>
                       )}
                     </>
