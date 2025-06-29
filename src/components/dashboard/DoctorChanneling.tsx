@@ -20,6 +20,7 @@ interface MedicalCenter {
   id: number;
   address: string;
   email: string;
+  medicleCenterId:number;
   distric: string;
   closeTime: string;
   contact2: string;
@@ -32,14 +33,36 @@ interface MedicalCenter {
 
 interface Doctor {
   id: number;
-  name: string;
-  specialization: string;
-  medicalCenter: string;
-  image: string;
-  rating: number;
-  experience: string;
-  availableDates: Date[];
-  availableSlots: string[];
+  uniqId: string;
+  fullName: string;
+  gender: string;
+  contact: string;
+  address1: string;
+  address2: string;
+  nic: string;
+  email: string;
+  medicalRegistrationNo: string;
+  yearsOfExperience: number;
+  hospitalAffiliation: string;
+  qualificationId: number;
+  specializationId: number;
+  status: string;
+  doctorFee: number;
+  roleId: number;
+  patientCount: number;
+  image?: string;
+}
+
+interface DoctorResponse {
+  code: number;
+  message: string;
+  data: Doctor[];
+}
+
+interface ScheduleResponse {
+  code: number;
+  message: string;
+  data: string[];
 }
 
 const DoctorChanneling = () => {
@@ -47,8 +70,9 @@ const DoctorChanneling = () => {
   const [step, setStep] = useState(1);
   const [selectedSpecialization, setSelectedSpecialization] = useState<number | null>(null);
   const [selectedMedicalCenter, setSelectedMedicalCenter] = useState<number | null>(null);
+  const [selectedMedicalCenterData, setSelectedMedicalCenterData] = useState<MedicalCenter | null>(null);
   const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
-  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
+  const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
   const [specializations, setSpecializations] = useState<Specialization[]>([]);
@@ -61,22 +85,7 @@ const DoctorChanneling = () => {
   const [error, setError] = useState('');
   const [medicalCentersError, setMedicalCentersError] = useState('');
   const [nearestCentersError, setNearestCentersError] = useState('');
-
-  // Mock doctors data - replace with real API data later
-  const doctors: Doctor[] = [
-    {
-      id: 1,
-      name: 'Dr. Sarah Johnson',
-      specialization: 'Cardiology',
-      medicalCenter: 'Bright Smile Dental Clinic',
-      image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1770&q=80',
-      rating: 4.8,
-      experience: '15 years',
-      availableDates: [new Date(new Date().setDate(new Date().getDate() + 1)), new Date(new Date().setDate(new Date().getDate() + 2)), new Date(new Date().setDate(new Date().getDate() + 3))],
-      availableSlots: ['09:00 AM', '10:30 AM', '11:45 AM', '02:00 PM', '03:30 PM', '04:45 PM']
-    },
-    // ... other mock doctors
-  ];
+  const [availableDays, setAvailableDays] = useState<string[]>([]);
 
   // Fetch specializations on component mount
   useEffect(() => {
@@ -141,7 +150,7 @@ const DoctorChanneling = () => {
             throw new Error('No specialization selected');
           }
 
-          const { name } = JSON.parse(storedSpecialization);
+          const { id, name } = JSON.parse(storedSpecialization);
           const token = localStorage.getItem('jwt');
 
           if (!token) {
@@ -163,7 +172,7 @@ const DoctorChanneling = () => {
           }
 
           const data = await response.json();
-
+          console.log(data)
           if (data.code === 200 && data.data) {
             setMedicalCenters(data.data);
           } else {
@@ -180,6 +189,105 @@ const DoctorChanneling = () => {
       fetchMedicalCenters();
     }
   }, [step, showNearestCenters]);
+
+  // Fetch doctors by medical center ID
+  const fetchDoctorsByMedicalCenter = async (medicalCenterId: number) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('jwt');
+
+      if (!token) {
+        throw new Error('Authentication required. Please login.');
+      }
+
+      // Get specialization ID from localStorage
+      const storedSpecialization = localStorage.getItem('selectedSpecialization');
+      if (!storedSpecialization) {
+        throw new Error('No specialization selected');
+      }
+
+      const { id } = JSON.parse(storedSpecialization);
+
+      const response = await fetch(
+          `http://localhost:8080/api/v1/doctor?medicleCenterId=${medicalCenterId}&specializationId=${id}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+      );
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem('jwt');
+          navigate('/login');
+          return;
+        }
+        throw new Error('Failed to fetch doctors');
+      }
+
+      const data: DoctorResponse = await response.json();
+
+      if (data.code === 200) {
+        setFilteredDoctors(data.data);
+      } else {
+        throw new Error(data.message || 'Failed to load doctors');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      console.error('Error fetching doctors:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch doctor schedule
+  const fetchDoctorSchedule = async (doctorId: number, medicalCenterId: number) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('jwt');
+
+      if (!token) {
+        throw new Error('Authentication required. Please login.');
+      }
+
+      const response = await fetch(
+          `http://localhost:8080/api/v1/channeling/room/schedule?doctorId=${doctorId}&medcleCenterId=${medicalCenterId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch doctor schedule');
+      }
+
+      const data: ScheduleResponse = await response.json();
+
+      if (data.code === 200) {
+        setAvailableDays(data.data);
+      } else {
+        throw new Error(data.message || 'Failed to load schedule');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      console.error('Error fetching doctor schedule:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Check if date is available
+  const isDateAvailable = (date: Date) => {
+    if (availableDays.length === 0) return false;
+
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+    return availableDays.includes(dayName);
+  };
 
   // Handle finding nearest centers
   const handleFindNearestCenters = async () => {
@@ -209,7 +317,6 @@ const DoctorChanneling = () => {
       }
 
       const data = await response.json();
-
       if (data.code === 200 && data.data) {
         setNearestCenters(data.data);
         setShowNearestCenters(true);
@@ -228,6 +335,8 @@ const DoctorChanneling = () => {
   const handleBackToAllCenters = () => {
     setShowNearestCenters(false);
     setNearestCenters([]);
+    setSelectedMedicalCenter(null);
+    setSelectedMedicalCenterData(null);
   };
 
   // Handle specialization selection
@@ -238,9 +347,11 @@ const DoctorChanneling = () => {
         id: selectedSpec.id,
         name: selectedSpec.specializationName
       }));
+
       setSelectedSpecialization(id);
       setStep(2);
       setSelectedMedicalCenter(null);
+      setSelectedMedicalCenterData(null);
       setSelectedDoctor(null);
       setSelectedDate(null);
       setSelectedTimeSlot(null);
@@ -248,28 +359,40 @@ const DoctorChanneling = () => {
   };
 
   // Handle medical center selection
-  const handleMedicalCenterSelect = (id: number) => {
-    setSelectedMedicalCenter(id);
-    const selectedCenter = medicalCenters.find(center => center.id === id)?.centerName ||
-        nearestCenters.find(center => center.id === id)?.centerName;
-    const selectedSpec = specializations.find(spec => spec.id === selectedSpecialization)?.specializationName;
+  const handleMedicalCenterSelect = (medicleCenterId: number) => {
+    console.log(medicleCenterId)
 
-    // Filter doctors based on specialization and medical center
-    const filtered = doctors.filter(doctor =>
-        doctor.specialization === selectedSpec &&
-        doctor.medicalCenter === selectedCenter
-    );
 
-    setFilteredDoctors(filtered);
-    setStep(3);
-    setSelectedDoctor(null);
-    setSelectedDate(null);
-    setSelectedTimeSlot(null);
+    const center = medicalCenters.find(center => center.medicleCenterId === medicleCenterId) ||
+        nearestCenters.find(center => center.medicleCenterId === medicleCenterId);
+
+    if (center) {
+      setSelectedMedicalCenter(medicleCenterId);
+      setSelectedMedicalCenterData(center);
+      fetchDoctorsByMedicalCenter(medicleCenterId);
+      setStep(3);
+      setSelectedDoctor(null);
+      setSelectedDate(null);
+      setSelectedTimeSlot(null);
+    }
   };
 
   // Handle doctor selection
   const handleDoctorSelect = (doctor: Doctor) => {
-    setSelectedDoctor(doctor);
+    if (!selectedMedicalCenter) return;
+
+    const selectedDoc = {
+      id: doctor.id,
+      name: doctor.fullName,
+      specialization: specializations.find(spec => spec.id === doctor.specializationId)?.specializationName || 'Unknown',
+      medicalCenter: selectedMedicalCenterData?.centerName || 'Unknown',
+      image: doctor.image || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1770&q=80',
+      rating: 4.5,
+      experience: `${doctor.yearsOfExperience} years`
+    };
+
+    setSelectedDoctor(selectedDoc);
+    fetchDoctorSchedule(doctor.id, selectedMedicalCenter);
     setStep(4);
     setSelectedDate(null);
     setSelectedTimeSlot(null);
@@ -278,6 +401,21 @@ const DoctorChanneling = () => {
   // Handle date selection
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
+
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+    let slots = [];
+
+    if (dayName === 'Monday' || dayName === 'Wednesday' || dayName === 'Friday') {
+      slots = ['09:00 AM', '10:30 AM', '02:00 PM', '03:30 PM'];
+    } else {
+      slots = ['10:00 AM', '11:30 AM', '01:30 PM', '04:00 PM'];
+    }
+
+    setSelectedDoctor(prev => ({
+      ...prev,
+      availableSlots: slots
+    }));
+
     setStep(5);
     setSelectedTimeSlot(null);
   };
@@ -289,16 +427,20 @@ const DoctorChanneling = () => {
 
   // Proceed to payment
   const handleProceedToPayment = () => {
-    const selectedCenter = medicalCenters.find(center => center.id === selectedMedicalCenter) ||
-        nearestCenters.find(center => center.id === selectedMedicalCenter);
+    if (!selectedMedicalCenterData || !selectedDoctor || !selectedDate || !selectedTimeSlot) {
+      console.error('Required data missing for payment');
+      return;
+    }
 
     navigate('/dashboard/payment', {
       state: {
         doctor: selectedDoctor,
         date: selectedDate,
         timeSlot: selectedTimeSlot,
-        medicalCenter: selectedCenter?.centerName,
-        fee: selectedCenter?.channelingFee
+        medicalCenter: selectedMedicalCenterData.centerName,
+        medicalCenterId: selectedMedicalCenterData.id,
+        medicalCenterData: selectedMedicalCenterData,
+        fee: selectedMedicalCenterData.channelingFee
       }
     });
   };
@@ -315,7 +457,7 @@ const DoctorChanneling = () => {
 
   // Format time for display
   const formatTime = (time: string) => {
-    return time.substring(0, 5); // Just show hours and minutes
+    return time.substring(0, 5);
   };
 
   // Go back to previous step
@@ -505,7 +647,11 @@ const DoctorChanneling = () => {
                               {medicalCenters.map(center => (
                                   <div
                                       key={center.id}
-                                      onClick={() => handleMedicalCenterSelect(center.id)}
+                                      onClick={() => {
+                                        console.log(center);
+                                        console.log(center.medicleCenterId);// ✅ Logs full center data on click
+                                        handleMedicalCenterSelect(center.medicleCenterId);
+                                      }}
                                       className={`p-4 border rounded-lg cursor-pointer hover:bg-blue-50 transition-colors ${selectedMedicalCenter === center.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
                                   >
                                     <h4 className="font-medium">{center.centerName}</h4>
@@ -541,7 +687,22 @@ const DoctorChanneling = () => {
                   Back to Medical Centers
                 </button>
                 <h2 className="text-lg font-semibold mb-4">Select Doctor</h2>
-                {filteredDoctors.length > 0 ? (
+                {loading ? (
+                    <div className="flex justify-center items-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                      <span className="ml-2">Loading doctors...</span>
+                    </div>
+                ) : error ? (
+                    <div className="text-center py-8 text-red-500">
+                      <p>Error loading doctors: {error}</p>
+                      <button
+                          onClick={() => fetchDoctorsByMedicalCenter(selectedMedicalCenter!)}
+                          className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                ) : filteredDoctors.length > 0 ? (
                     <div className="space-y-4">
                       {filteredDoctors.map(doctor => (
                           <div
@@ -550,25 +711,29 @@ const DoctorChanneling = () => {
                               className={`p-4 border rounded-lg cursor-pointer hover:bg-blue-50 transition-colors ${selectedDoctor?.id === doctor.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
                           >
                             <div className="flex items-center">
-                              <img src={doctor.image} alt={doctor.name} className="w-16 h-16 rounded-full object-cover" />
+                              <img
+                                  src={doctor.image || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1770&q=80'}
+                                  alt={doctor.fullName}
+                                  className="w-16 h-16 rounded-full object-cover"
+                              />
                               <div className="ml-4">
-                                <h3 className="font-medium">{doctor.name}</h3>
+                                <h3 className="font-medium">{doctor.fullName}</h3>
                                 <p className="text-sm text-gray-500">
-                                  {doctor.specialization}
+                                  Registration: {doctor.medicalRegistrationNo}
                                 </p>
-                                <div className="flex items-center mt-1">
-                                  <div className="flex items-center">
-                                    <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                                    </svg>
-                                    <span className="text-sm text-gray-600 ml-1">
-                              {doctor.rating}
-                            </span>
-                                  </div>
-                                  <span className="mx-2 text-gray-300">•</span>
-                                  <span className="text-sm text-gray-600">
-                            {doctor.experience} experience
-                          </span>
+                                <div className="mt-2 space-y-1">
+                                  <p className="text-sm text-gray-500">
+                                    Experience: {doctor.yearsOfExperience} years
+                                  </p>
+                                  <p className="text-sm text-gray-500">
+                                    Gender: {doctor.gender}
+                                  </p>
+                                  <p className="text-sm text-gray-500">
+                                    Contact: {doctor.contact}
+                                  </p>
+                                  <p className="text-sm font-medium text-blue-600">
+                                    Fee: Rs. {doctor.doctorFee.toFixed(2)}
+                                  </p>
                                 </div>
                               </div>
                             </div>
@@ -579,10 +744,10 @@ const DoctorChanneling = () => {
                     <div className="text-center py-8">
                       <UserIcon className="h-10 w-10 text-gray-400 mx-auto" />
                       <h3 className="mt-2 text-sm font-medium text-gray-900">
-                        No doctors available
+                        No doctors available at this center
                       </h3>
                       <p className="mt-1 text-sm text-gray-500">
-                        Try selecting a different specialization or medical center.
+                        Try selecting a different medical center.
                       </p>
                     </div>
                 )}
@@ -610,10 +775,13 @@ const DoctorChanneling = () => {
                   <DatePicker
                       selected={selectedDate}
                       onChange={(date: Date) => handleDateSelect(date)}
-                      includeDates={selectedDoctor.availableDates}
+                      filterDate={isDateAvailable}
                       minDate={new Date()}
                       inline
                       className="border rounded-md"
+                      dayClassName={(date) =>
+                          isDateAvailable(date) ? 'available-day' : 'unavailable-day'
+                      }
                   />
                 </div>
                 <div className="text-sm text-gray-500">
@@ -671,6 +839,21 @@ const DoctorChanneling = () => {
               </div>
           )}
         </div>
+
+        {/* Add CSS for date picker */}
+        <style>
+          {`
+          .react-datepicker__day--available-day {
+            background-color: #f0fdf4;
+            color: #166534;
+          }
+          .react-datepicker__day--unavailable-day {
+            color: #d1d5db;
+            pointer-events: none;
+            text-decoration: line-through;
+          }
+        `}
+        </style>
       </div>
   );
 };
