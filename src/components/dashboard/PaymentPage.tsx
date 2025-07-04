@@ -60,6 +60,7 @@ const PaymentPage = () => {
         date,
         timeSlot,
         medicalCenter,
+        medicalCenterId,
         paymentAmount: totalFee,
         paymentMethod: method
       }));
@@ -89,6 +90,7 @@ const PaymentPage = () => {
 
       if (data.code === 200) {
         // For both card and PayPal, redirect to the session URL
+        localStorage.setItem('paymentId', data.data.payment.id);
         if (data.data?.sessionUrl) {
           window.location.href = data.data.sessionUrl;
         } else {

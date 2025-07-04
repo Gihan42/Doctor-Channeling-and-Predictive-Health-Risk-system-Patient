@@ -345,6 +345,12 @@ const DoctorChanneling = () => {
   // Handle date selection
   const handleDateSelect = async (date: Date) => {
     setSelectedDate(date);
+    // Save selected date to sessionStorage
+    sessionStorage.setItem('selectedDate', date.toString());
+
+    // Also save the day name (e.g., "Tuesday")
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+    sessionStorage.setItem('selectedDay', dayName);
 
     if (selectedDoctor && selectedMedicalCenter) {
       await fetchAvailableTimeSlots(selectedDoctor.id, date);
@@ -424,8 +430,9 @@ const DoctorChanneling = () => {
   };
 
   // Handle medical center selection
+// Handle medical center selection
   const handleMedicalCenterSelect = (medicleCenterId: number) => {
-    console.log(medicleCenterId)
+    console.log(medicleCenterId);
 
     const center = medicalCenters.find(center => center.medicleCenterId === medicleCenterId) ||
         nearestCenters.find(center => center.medicleCenterId === medicleCenterId);
@@ -433,6 +440,10 @@ const DoctorChanneling = () => {
     if (center) {
       setSelectedMedicalCenter(medicleCenterId);
       setSelectedMedicalCenterData(center);
+
+      // Save medicalCenterId to sessionStorage
+      sessionStorage.setItem('medicalCenterId', medicleCenterId.toString());
+
       fetchDoctorsByMedicalCenter(medicleCenterId);
       setStep(3);
       setSelectedDoctor(null);
@@ -456,6 +467,9 @@ const DoctorChanneling = () => {
     };
 
     setSelectedDoctor(selectedDoc);
+    // Save doctor ID to sessionStorage
+    sessionStorage.setItem('selectedDoctorId', doctor.id.toString());
+
     fetchDoctorSchedule(doctor.id, selectedMedicalCenter);
     setStep(4);
     setSelectedDate(null);

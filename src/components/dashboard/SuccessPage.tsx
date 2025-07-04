@@ -26,6 +26,7 @@ const SuccessPage = () => {
                         date: pendingPayment.date,
                         timeSlot: pendingPayment.timeSlot,
                         medicalCenter: pendingPayment.medicalCenter,
+                        medicalCenterId: pendingPayment.medicalCenterId,
                         paymentAmount: pendingPayment.paymentAmount,
                         paymentMethod: pendingPayment.paymentMethod,
                         channelNumber: Math.floor(Math.random() * 100) + 1, // Random channel number
