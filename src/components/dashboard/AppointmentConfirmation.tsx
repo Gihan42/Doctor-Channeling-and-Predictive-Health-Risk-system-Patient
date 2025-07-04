@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { CheckCircleIcon, DownloadIcon, PrinterIcon, MailIcon, CalendarIcon, ClockIcon, MapPinIcon, UserIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import emailjs from '@emailjs/browser';
 
 const AppointmentConfirmation = () => {
   const location = useLocation();
@@ -10,6 +11,7 @@ const AppointmentConfirmation = () => {
   const pdfRef = useRef<HTMLDivElement>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [appointmentDetails, setAppointmentDetails] = useState<any>(null);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const {
     doctor,
@@ -143,39 +145,63 @@ const AppointmentConfirmation = () => {
     }
   };
 
-  const handleEmailConfirmation = () => {
+  const handleEmailConfirmation = async () => {
     if (!appointmentDetails) {
       toast.error('Please confirm appointment first');
       return;
     }
 
-    const emailContent = {
-      subject: `Appointment Confirmation - ${doctor.name}`,
-      body: `
-        Dear Patient,
-        
-        Your appointment has been confirmed with the following details:
-        
-        Doctor: ${doctor.name}
-        Specialization: ${doctor.specialization}
-        Date: ${formatDate(date)}
-        Time: ${timeSlot}
-        Location: ${medicalCenter}
-        Channel Number: ${appointmentDetails.channelNumber}
-        ${appointmentDetails.roomId ? `Room ID: ${appointmentDetails.roomId}` : ''}
-        
-        Payment Information:
-        - Amount: Rs. ${paymentAmount?.toFixed(2)}
-        - Payment Method: ${paymentMethod === 'card' ? 'Credit/Debit Card' : 'PayPal'}
-        - Transaction ID: TXN${Math.floor(Math.random() * 1000000)}
-        
-        Thank you for choosing MediCare.
-      `
-    };
+    setIsSendingEmail(true);
+    try {
+      const userEmail = localStorage.getItem('userEmail');
+      console.log(userEmail)
+      if (!userEmail) {
+        toast.error('User email not found');
+        return;
+      }
 
-    // In a real app, you would send this to your email service
-    console.log('Email content:', emailContent);
-    toast.success('Confirmation email sent successfully');
+      // Prepare template parameters
+      const templateParams = {
+        to_email: userEmail,
+        doctor_name: doctor.name,
+        specialization: doctor.specialization,
+        appointment_date: formatDate(date),
+        appointment_time: timeSlot,
+        appointment_time_short: appointmentDetails?.appointmentTime || timeSlot,
+        location: medicalCenter,
+        channel_number: appointmentDetails?.channelNumber || 0,
+        room_id: appointmentDetails?.roomId || 'N/A',
+        payment_method: paymentMethod === 'card' ? 'Credit/Debit Card' : 'PayPal',
+        amount_paid: `Rs. ${paymentAmount?.toFixed(2)}`,
+        payment_status: 'Completed',
+        transaction_id: `TXN${Math.floor(Math.random() * 1000000)}`,
+        patient_name: localStorage.getItem('userName') || 'Patient'
+      };
+
+      // Replace these with your actual EmailJS credentials
+      const serviceId = 'service_woa7734';
+      const templateId = 'template_fvglk02';
+      const publicKey = 'RpFx4AYQy_EW22Odl';
+
+      // Send email using EmailJS
+      const response = await emailjs.send(
+          serviceId,
+          templateId,
+          templateParams,
+          publicKey
+      );
+
+      if (response.status === 200) {
+        toast.success('Confirmation email sent successfully');
+      } else {
+        throw new Error('Failed to send email');
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast.error('Failed to send confirmation email');
+    } finally {
+      setIsSendingEmail(false);
+    }
   };
 
   const handleCreateAppointment = async () => {
@@ -198,8 +224,6 @@ const AppointmentConfirmation = () => {
       const mediCenterIdStr = sessionStorage.getItem("medicalCenterId");
       const mediCenterId = mediCenterIdStr ? parseInt(mediCenterIdStr, 10) : null;
 
-
-
       const appointmentDateStr = sessionStorage.getItem("selectedDate");
       let formattedAppointmentDate = "2025-06-24"; // Default fallback
 
@@ -211,18 +235,15 @@ const AppointmentConfirmation = () => {
         }
       }
 
-
       const now = new Date();
       const bookingDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
 
-
-      console.log('Creating appointment with data:',mediCenterId)
       const appointmentData = {
-        id:0,
+        id: 0,
         patientId: patientId ? parseInt(patientId) : 0,
-        patientName:patientName || '',
+        patientName: patientName || '',
         doctorId: doctorId ? parseInt(doctorId) : 0,
-        medicleCenterId: mediCenterId, // Fixed value or get from your state
+        medicleCenterId: mediCenterId,
         roomId: 0,
         sheduleId: 0,
         appointmentDate: formattedAppointmentDate,
@@ -230,11 +251,9 @@ const AppointmentConfirmation = () => {
         channelNumber: 1,
         bookingDate: bookingDate,
         appointmentStatus: "PAID",
-        paymentId:paymentId,
-        dayOfWeek:dayOfWeek
+        paymentId: paymentId,
+        dayOfWeek: dayOfWeek
       };
-
-      console.log('Sending appointment data:', appointmentData);
 
       const api = axios.create({
         baseURL: 'http://localhost:8080/api/v1',
@@ -540,11 +559,11 @@ const AppointmentConfirmation = () => {
 
             <button
                 onClick={handleEmailConfirmation}
-                disabled={!appointmentDetails}
+                disabled={!appointmentDetails || isSendingEmail}
                 className={`flex items-center px-4 py-2 text-white rounded-md ${appointmentDetails ? 'bg-green-600 hover:bg-green-700' : 'bg-green-400 cursor-not-allowed'}`}
             >
               <MailIcon className="h-4 w-4 mr-2" />
-              Email Confirmation
+              {isSendingEmail ? 'Sending...' : 'Email Confirmation'}
             </button>
           </div>
           <div className="mt-6 text-center">
