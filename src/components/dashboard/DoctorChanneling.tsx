@@ -65,6 +65,12 @@ interface ScheduleResponse {
   data: string[];
 }
 
+interface TimeSlotResponse {
+  code: number;
+  message: string;
+  data: string[];
+}
+
 const DoctorChanneling = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
@@ -87,6 +93,8 @@ const DoctorChanneling = () => {
   const [nearestCentersError, setNearestCentersError] = useState('');
   const [availableDays, setAvailableDays] = useState<string[]>([]);
   const [hasMedicalCenters, setHasMedicalCenters] = useState(false);
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
+  const [timeSlotsLoading, setTimeSlotsLoading] = useState(false);
 
   // Fetch specializations on component mount
   useEffect(() => {
@@ -284,12 +292,66 @@ const DoctorChanneling = () => {
     }
   };
 
+  // Fetch available time slots
+  const fetchAvailableTimeSlots = async (doctorId: number, date: Date) => {
+    try {
+      setTimeSlotsLoading(true);
+      const token = localStorage.getItem('jwt');
+
+      if (!token) {
+        throw new Error('Authentication required. Please login.');
+      }
+
+      // Format date as YYYY-MM-DD
+      const formattedDate = date.toISOString().split('T')[0];
+
+      const response = await fetch(
+          `http://localhost:8080/api/v1/channeling/room/schedule?doctorId=${doctorId}&date=${formattedDate}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch available time slots');
+      }
+
+      const data: TimeSlotResponse = await response.json();
+
+      if (data.code === 200) {
+        setAvailableTimeSlots(data.data);
+      } else {
+        throw new Error(data.message || 'Failed to load time slots');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      console.error('Error fetching time slots:', err);
+    } finally {
+      setTimeSlotsLoading(false);
+    }
+  };
+
   // Check if date is available
   const isDateAvailable = (date: Date) => {
     if (availableDays.length === 0) return false;
 
     const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
     return availableDays.includes(dayName);
+  };
+
+  // Handle date selection
+  const handleDateSelect = async (date: Date) => {
+    setSelectedDate(date);
+
+    if (selectedDoctor && selectedMedicalCenter) {
+      await fetchAvailableTimeSlots(selectedDoctor.id, date);
+    }
+
+    setStep(5);
+    setSelectedTimeSlot(null);
   };
 
   // Handle finding nearest centers
@@ -400,28 +462,6 @@ const DoctorChanneling = () => {
     setSelectedTimeSlot(null);
   };
 
-  // Handle date selection
-  const handleDateSelect = (date: Date) => {
-    setSelectedDate(date);
-
-    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-    let slots = [];
-
-    if (dayName === 'Monday' || dayName === 'Wednesday' || dayName === 'Friday') {
-      slots = ['09:00 AM', '10:30 AM', '02:00 PM', '03:30 PM'];
-    } else {
-      slots = ['10:00 AM', '11:30 AM', '01:30 PM', '04:00 PM'];
-    }
-
-    setSelectedDoctor(prev => ({
-      ...prev,
-      availableSlots: slots
-    }));
-
-    setStep(5);
-    setSelectedTimeSlot(null);
-  };
-
   // Handle time slot selection
   const handleTimeSlotSelect = (slot: string) => {
     setSelectedTimeSlot(slot);
@@ -433,16 +473,17 @@ const DoctorChanneling = () => {
       console.error('Required data missing for payment');
       return;
     }
-
+    const selectedDoctorData = filteredDoctors.find(doc => doc.id === selectedDoctor.id);
     navigate('/dashboard/payment', {
       state: {
         doctor: selectedDoctor,
         date: selectedDate,
         timeSlot: selectedTimeSlot,
         medicalCenter: selectedMedicalCenterData.centerName,
-        medicalCenterId: selectedMedicalCenterData.id,
+        medicalCenterId: selectedMedicalCenterData.medicleCenterId,
         medicalCenterData: selectedMedicalCenterData,
-        fee: selectedMedicalCenterData.channelingFee
+        medicalCenterFee: selectedMedicalCenterData.channelingFee,
+        doctorFee: selectedDoctorData?.doctorFee || 0 // Add doctor fee here
       }
     });
   };
@@ -836,17 +877,30 @@ const DoctorChanneling = () => {
                   </div>
                 </div>
                 <h3 className="font-medium mb-4">Select Time Slot</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
-                  {selectedDoctor.availableSlots.map(slot => (
-                      <button
-                          key={slot}
-                          onClick={() => handleTimeSlotSelect(slot)}
-                          className={`py-2 px-4 border rounded-md text-center ${selectedTimeSlot === slot ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 hover:bg-blue-50'}`}
-                      >
-                        {slot}
-                      </button>
-                  ))}
-                </div>
+
+                {timeSlotsLoading ? (
+                    <div className="flex justify-center items-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                      <span className="ml-2">Loading available time slots...</span>
+                    </div>
+                ) : availableTimeSlots.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+                      {availableTimeSlots.map(slot => (
+                          <button
+                              key={slot}
+                              onClick={() => handleTimeSlotSelect(slot)}
+                              className={`py-2 px-4 border rounded-md text-center ${selectedTimeSlot === slot ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 hover:bg-blue-50'}`}
+                          >
+                            {slot}
+                          </button>
+                      ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-4 text-gray-500">
+                      No available time slots for this date
+                    </div>
+                )}
+
                 <button
                     onClick={handleProceedToPayment}
                     disabled={!selectedTimeSlot}
