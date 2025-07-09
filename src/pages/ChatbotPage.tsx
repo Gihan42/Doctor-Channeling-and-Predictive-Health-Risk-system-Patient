@@ -55,6 +55,33 @@ const ChatbotPage = () => {
     e.preventDefault();
     if (!input.trim()) return;
 
+    // Validate if the question is medical-related
+    const medicalKeywords = [
+      'health', 'medical', 'doctor', 'hospital', 'symptom', 'disease',
+      'illness', 'pain', 'treatment', 'medicine', 'drug', 'pharmacy',
+      'diagnosis', 'cancer', 'heart', 'blood', 'pressure', 'diabetes',
+      'fever', 'headache', 'cough', 'allergy', 'asthma', 'infection',
+      'vaccine', 'vaccination', 'screening', 'checkup', 'appointment',
+      'emergency', 'clinic', 'physician', 'surgeon', 'nurse', 'patient',
+      'prescription', 'therapy', 'recovery', 'rehab', 'mental', 'physical',
+      'exercise', 'diet', 'nutrition', 'weight', 'obesity', 'fit', 'fitness'
+    ];
+
+    const isMedicalQuestion = medicalKeywords.some(keyword =>
+        input.toLowerCase().includes(keyword.toLowerCase())
+    );
+
+    if (!isMedicalQuestion) {
+      setMessages(prev => [...prev, {
+        id: prev.length + 1,
+        text: "I'm sorry, I can only answer health and medical-related questions. Please ask about symptoms, diseases, treatments, or other health topics.",
+        sender: 'bot',
+        timestamp: new Date()
+      }]);
+      setInput('');
+      return;
+    }
+
     const userMessage: Message = {
       id: messages.length + 1,
       text: input,
@@ -86,7 +113,7 @@ const ChatbotPage = () => {
 
       const data = await response.json();
 
-      const botResponseText = data.response || "Sorry, I didn't understand that.";
+      const botResponseText = data.response || "Sorry, I didn't understand that. Could you please rephrase your medical question?";
 
       const botMessage: Message = {
         id: messages.length + 2,
