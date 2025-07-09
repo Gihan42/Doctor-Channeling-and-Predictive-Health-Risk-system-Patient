@@ -40,8 +40,10 @@ const UserProfile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
+  const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
 
   useEffect(() => {
+
     const fetchUserData = async () => {
       try {
         const token = localStorage.getItem('jwt');
@@ -106,8 +108,26 @@ const UserProfile = () => {
     };
 
     fetchUserData();
+    fetchCities();
   }, []);
 
+
+
+
+  const fetchCities = async () => {
+    try {
+      const response = await fetch(
+          "https://secure.geonames.org/searchJSON?country=LK&featureClass=P&maxRows=1000&username=gihanmadushanka807"
+      );
+      const data = await response.json();
+
+      const cityNames = data.geonames.map((city: any) => city.name);
+      const uniqueCities = [...new Set(cityNames)].sort();
+      setCitySuggestions(uniqueCities);
+    } catch (err) {
+      console.error("Failed to fetch cities", err);
+    }
+  };
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -446,13 +466,28 @@ const UserProfile = () => {
                         City
                       </label>
                       <input
+                          list="cityOptions"
+                          id="city"
+                          name="city"
+                          type="text"
+                          value={formData.city}
+                          onChange={handleInputChange}
+                          className={`w-full px-3 py-2 border ${errors.city ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                      />
+
+                      <datalist id="cityOptions">
+                        {citySuggestions.map((city, index) => (
+                            <option key={index} value={city} />
+                        ))}
+                      </datalist>
+{/*                      <input
                           type="text"
                           id="city"
                           name="city"
                           value={formData.city}
                           onChange={handleInputChange}
                           className={`w-full px-3 py-2 border ${errors.city ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                      />
+                      />*/}
                       {errors.city && (
                           <p className="mt-1 text-sm text-red-600">{errors.city}</p>
                       )}

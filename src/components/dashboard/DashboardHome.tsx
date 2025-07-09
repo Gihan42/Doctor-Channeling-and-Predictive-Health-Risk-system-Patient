@@ -18,6 +18,7 @@ const DashboardHome = () => {
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [ongoingAppointmentNumber, setOngoingAppointmentNumber] = useState('');
 
   const fetchAppointmentsByPatientId = async () => {
     try {
@@ -84,7 +85,50 @@ const DashboardHome = () => {
     console.log(`Dashboard loaded. Welcome, ${storedName}`);
   };
 
+  const getOngoingAppointmentNumber = async () => {
+    try {
+      const userId = localStorage.getItem('id');
+      const token = localStorage.getItem('jwt');
+
+      if (!userId) {
+        throw new Error('Patient ID not found in localStorage');
+      }
+
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await fetch(
+          `http://localhost:8080/api/v1/appointment?patientId=${userId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.code === 200) {
+        console.log(data.data)
+        setOngoingAppointmentNumber(data.data)
+
+      } else {
+        throw new Error(data.message || 'Failed to fetch appointments');
+      }
+    }catch (err) {
+      console.error('Error fetching appointments:', err);
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+    }
+  }
+
   useEffect(() => {
+    getOngoingAppointmentNumber();
     fetchDashboardData();
     fetchAppointmentsByPatientId();
   }, []);
@@ -97,6 +141,7 @@ const DashboardHome = () => {
       day: 'numeric'
     };
     return new Date(dateString).toLocaleDateString(undefined, options);
+
   };
 
   // Format time (assuming HH:MM:SS format)
@@ -209,7 +254,7 @@ const DashboardHome = () => {
                     <div
                         key={`${appointment.channelingRoomId}-${index}`}
                         className="border border-gray-100 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer shadow-sm"
-                        onClick={() => navigate(`/dashboard/appointment/${appointment.channelingRoomId}`)}
+                        //onClick={() => navigate(`/dashboard/appointment/${appointment.channelingRoomId}`)}
                     >
                       <div className="flex justify-between items-start">
                         <div>
@@ -242,6 +287,9 @@ const DashboardHome = () => {
                       </div>
                       <div className="mt-2 text-sm text-gray-600">
                         Queue Number: {appointment.channelingNumber}
+                      </div>
+                      <div className="mt-2 text-sm text-gray-600">
+                        Ongoing Appointment  Number: {ongoingAppointmentNumber}
                       </div>
                     </div>
                 ))}

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LockIcon, MailIcon, PhoneIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
+import { LockIcon, MailIcon, PhoneIcon, EyeIcon, EyeOffIcon,Building2Icon  } from 'lucide-react';
 import { User } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -11,12 +11,33 @@ const RegisterPage = () => {
     lastName: '',
     email: '',
     phone: '',
+    city:'',
     password: '',
     confirmPassword: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const response = await fetch(
+            "https://secure.geonames.org/searchJSON?country=LK&featureClass=P&maxRows=1000&username=gihanmadushanka807"
+        );
+        const data = await response.json();
+
+        const cityNames = data.geonames.map((city: any) => city.name);
+        const uniqueCities = [...new Set(cityNames)].sort();
+        setCitySuggestions(uniqueCities);
+      } catch (err) {
+        console.error("Failed to fetch cities", err);
+      }
+    };
+
+    fetchCities();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -74,6 +95,7 @@ const RegisterPage = () => {
       const registrationData = {
         email: formData.email,
         phoneNumber: formData.phone,
+        city: formData.city,
         userName: `${formData.firstName} ${formData.lastName}`, // Combining first and last name
         password: formData.password
       };
@@ -205,6 +227,36 @@ const RegisterPage = () => {
                     />
                   </div>
                   {errors.email && <p className="mt-2 text-sm text-red-600">{errors.email}</p>}
+                </div>
+                <div>
+                  <label htmlFor="city" className="block text-sm font-medium text-gray-700">
+                    City
+                  </label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Building2Icon className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                        list="cityOptions"
+                        id="city"
+                        name="city"
+                        type="text"
+                        autoComplete="off"
+                        value={formData.city}
+                        onChange={handleChange}
+                        className={`block w-full pl-10 pr-3 py-2 border ${
+                            errors.city ? 'border-red-300' : 'border-gray-300'
+                        } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                    />
+
+                    <datalist id="cityOptions">
+                      {citySuggestions.map((city, index) => (
+                          <option key={index} value={city} />
+                      ))}
+                    </datalist>
+
+                  </div>
+                  {errors.city && <p className="mt-2 text-sm text-red-600">{errors.city}</p>}
                 </div>
 
                 <div>
