@@ -175,11 +175,11 @@ const DashboardHome = () => {
         </div>
 
         {/* Health Status */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h2 className="text-lg font-semibold mb-4 text-gray-800">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center">
+         {/* <h2 className="text-lg font-semibold mb-4 text-gray-800">
             Your Health Status
-          </h2>
-          <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6">
+          </h2>*/}
+{/*          <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6">
             <div className="flex">
               <AlertCircleIcon className="h-5 w-5 text-amber-500 mr-2" />
               <div>
@@ -192,8 +192,8 @@ const DashboardHome = () => {
                 </p>
               </div>
             </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          </div>*/}
+          {/*<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="border border-gray-100 rounded-lg p-4 bg-gray-50">
               <h3 className="text-sm font-medium text-gray-700 mb-2">
                 Last Blood Pressure
@@ -208,10 +208,10 @@ const DashboardHome = () => {
               <p className="text-lg font-semibold text-gray-800">185 mg/dL</p>
               <p className="text-xs text-gray-500">Recorded on April 15, 2023</p>
             </div>
-          </div>
+          </div>*/}
           <button
               onClick={() => navigate('/')}
-              className="mt-4 text-teal-600 hover:text-teal-800 text-sm font-medium flex items-center"
+              className="mt-0 text-teal-600 text-lg font-semibold hover:text-teal-800  flex items-center"
           >
             Take New Risk Assessment
             <ArrowRightIcon className="h-4 w-4 ml-1" />

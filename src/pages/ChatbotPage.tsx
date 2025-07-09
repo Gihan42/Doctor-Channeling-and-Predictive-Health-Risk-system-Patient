@@ -169,7 +169,7 @@ const ChatbotPage = () => {
       <div className="max-w-4xl mx-auto  px-4 sm:px-6 lg:px-8 py-8 mt-14">
         <div className="bg-white shadow-lg rounded-lg overflow-hidden h-[calc(100vh-120px)] flex flex-col">
           {/* Header */}
-          <div className="bg-blue-600 text-white px-6 py-4">
+          <div className="bg-gradient-to-r from-teal-400  to-teal-500 hover:from-teal-500 hover:to-teal-600 text-white px-6 py-4">
             <h1 className="text-xl font-semibold">Health Assistant</h1>
             <p className="text-sm text-blue-100">
               Ask questions about symptoms, diseases, or preventive care
@@ -219,7 +219,7 @@ const ChatbotPage = () => {
             <form onSubmit={handleSubmit} className="flex items-center">
               <input type="text" value={input} onChange={e => setInput(e.target.value)} placeholder="Type your health question..." className="flex-1 px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
               <button type="submit" disabled={!input.trim()}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50">
+                      className="bg-teal-500 text-white px-4 py-2 rounded-r-md hover:from-teal-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50">
                 <SendIcon className="h-5 w-5" />
               </button>
             </form>
