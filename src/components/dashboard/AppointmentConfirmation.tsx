@@ -179,9 +179,9 @@ const AppointmentConfirmation = () => {
       };
 
       // Replace these with your actual EmailJS credentials
-      const serviceId = 'service_woa7734';
-      const templateId = 'template_fvglk02';
-      const publicKey = 'RpFx4AYQy_EW22Odl';
+      const serviceId = import.meta.env.VITE_SERVICE_ID;
+      const templateId = import.meta.env.VITE_TEMPLATE_ID;
+      const publicKey = import.meta.env.VITE_PUBLIC_KEY;
 
       // Send email using EmailJS
       const response = await emailjs.send(

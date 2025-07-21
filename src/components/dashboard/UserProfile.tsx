@@ -18,6 +18,7 @@ interface UserData {
 }
 
 const UserProfile = () => {
+  const baseUrl = import.meta.env.VITE_BASE_URL;
   const [user, setUser] = useState<UserData>({
     fullName: '',
     email: '',
@@ -60,7 +61,7 @@ const UserProfile = () => {
           return;
         }
 
-        const response = await fetch(`http://localhost:8080/api/v1/patient?email=${email}`, {
+        const response = await fetch(`${baseUrl}patient?email=${email}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -109,7 +110,7 @@ const UserProfile = () => {
 
     fetchUserData();
     fetchCities();
-  }, []);
+  },[]);
 
 
 
@@ -235,7 +236,7 @@ const UserProfile = () => {
         return;
       }
 
-      const response = await fetch(`http://localhost:8080/api/v1/patient/update`, {
+      const response = await fetch(`${baseUrl}patient/update`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -280,7 +281,7 @@ const UserProfile = () => {
         newPassword: passwordData.newPassword
       };
 
-      const response = await fetch(`http://localhost:8080/api/v1/patient/updatePw`, {
+      const response = await fetch(`${baseUrl}patient/updatePw`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

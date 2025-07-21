@@ -72,6 +72,7 @@ interface TimeSlotResponse {
 }
 
 const DoctorChanneling = () => {
+  const baseUrl = import.meta.env.VITE_BASE_URL;
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [selectedSpecialization, setSelectedSpecialization] = useState<number | null>(null);
@@ -107,7 +108,7 @@ const DoctorChanneling = () => {
           throw new Error('Authentication required. Please login.');
         }
 
-        const response = await fetch('http://localhost:8080/api/v1/specialization/getAll', {
+        const response = await fetch(`${baseUrl}specialization/getAll`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -167,7 +168,7 @@ const DoctorChanneling = () => {
           }
 
           const response = await fetch(
-              `http://localhost:8080/api/v1/specialization?specializationName=${encodeURIComponent(name)}`,
+              `${baseUrl}specialization?specializationName=${encodeURIComponent(name)}`,
               {
                 headers: {
                   'Authorization': `Bearer ${token}`,
@@ -220,7 +221,7 @@ const DoctorChanneling = () => {
       const { id } = JSON.parse(storedSpecialization);
 
       const response = await fetch(
-          `http://localhost:8080/api/v1/doctor?medicleCenterId=${medicalCenterId}&specializationId=${id}`,
+          `${baseUrl}doctor?medicleCenterId=${medicalCenterId}&specializationId=${id}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -264,7 +265,7 @@ const DoctorChanneling = () => {
       }
 
       const response = await fetch(
-          `http://localhost:8080/api/v1/channeling/room/schedule?doctorId=${doctorId}&medcleCenterId=${medicalCenterId}`,
+          `${baseUrl}channeling/room/schedule?doctorId=${doctorId}&medcleCenterId=${medicalCenterId}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -306,7 +307,7 @@ const DoctorChanneling = () => {
       const formattedDate = date.toISOString().split('T')[0];
 
       const response = await fetch(
-          `http://localhost:8080/api/v1/channeling/room/schedule?doctorId=${doctorId}&date=${formattedDate}`,
+          `${baseUrl}channeling/room/schedule?doctorId=${doctorId}&date=${formattedDate}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -376,7 +377,7 @@ const DoctorChanneling = () => {
         throw new Error('Authentication required');
       }
 
-      const response = await fetch(`http://localhost:8080/api/v1/medical/center?id=${userId}`, {
+      const response = await fetch(`${baseUrl}medical/center?id=${userId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

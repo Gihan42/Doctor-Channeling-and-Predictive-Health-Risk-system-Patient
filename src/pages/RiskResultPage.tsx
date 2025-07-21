@@ -9,6 +9,7 @@ import {
 import { useEffect, useState } from 'react';
 
 const RiskResultPage = () => {
+  const baseUrl = import.meta.env.VITE_BASE_URL;
   const location = useLocation();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -118,7 +119,7 @@ Please provide personalized advice based on this risk assessment.`;
     setError('');
     try {
       const prompt = generateChatPrompt();
-      const response = await fetch('http://localhost:8080/api/v1/ml/chat', {
+      const response = await fetch(`${baseUrl}ml/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

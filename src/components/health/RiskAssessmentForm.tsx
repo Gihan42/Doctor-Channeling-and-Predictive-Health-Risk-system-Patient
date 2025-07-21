@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight, AlertCircle } from 'lucide-react';
 
 const RiskAssessmentForm = () => {
+  const baseUrl = import.meta.env.VITE_BASE_URL;
   const navigate = useNavigate();
   const [assessmentType, setAssessmentType] = useState<'heart' | 'cancer' | null>(null);
   const [step, setStep] = useState(1);
@@ -159,10 +160,10 @@ const RiskAssessmentForm = () => {
       let requestData = {};
 
       if (assessmentType === 'cancer') {
-        apiUrl = 'http://localhost:8080/api/v1/ml/predict/cancer';
+        apiUrl = `${baseUrl}ml/predict/cancer`;
         requestData = prepareCancerData();
       } else if (assessmentType === 'heart') {
-        apiUrl = 'http://localhost:8080/api/v1/ml/predict/heart-attack';
+        apiUrl = `${baseUrl}ml/predict/heart-attack`;
         requestData = prepareHeartData();
       }
 

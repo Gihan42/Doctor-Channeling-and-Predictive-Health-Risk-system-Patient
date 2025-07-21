@@ -14,6 +14,7 @@ interface Appointment {
 }
 
 const AppointmentHistory = () => {
+  const baseUrl = import.meta.env.VITE_BASE_URL;
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Pending' | 'Completed'>('all');
@@ -33,7 +34,7 @@ const AppointmentHistory = () => {
           throw new Error('Authentication token not found');
         }
         const response = await fetch(
-            `http://localhost:8080/api/v1/appointment/getAppointmentDetailsByPatientId?patientId=${patientId}`,
+            `${baseUrl}appointment/getAppointmentDetailsByPatientId?patientId=${patientId}`,
             {
               headers: {
                 'Authorization': `Bearer ${token}`,

@@ -5,6 +5,7 @@ import { User } from 'lucide-react';
 import { toast } from 'sonner';
 
 const RegisterPage = () => {
+  const baseUrl = import.meta.env.VITE_BASE_URL;
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
@@ -100,7 +101,7 @@ const RegisterPage = () => {
         password: formData.password
       };
 
-      const response = await fetch('http://localhost:8080/api/v1/patient/signUp', {
+      const response = await fetch(`${baseUrl}patient/signUp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

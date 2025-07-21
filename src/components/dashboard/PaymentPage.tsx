@@ -11,6 +11,7 @@ interface PaymentRequest {
 }
 
 const PaymentPage = () => {
+  const baseUrl = import.meta.env.VITE_BASE_URL;
   const location = useLocation();
   const navigate = useNavigate();
   const {
@@ -73,7 +74,7 @@ const PaymentPage = () => {
         paymentMethod: method
       };
 
-      const response = await fetch('http://localhost:8080/api/v1/payment/create', {
+      const response = await fetch(`${baseUrl}payment/create`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

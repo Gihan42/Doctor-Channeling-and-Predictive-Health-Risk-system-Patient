@@ -11,6 +11,7 @@ import AdminPanel from './pages/AdminPanel';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import SuccessPage from './components/dashboard/SuccessPage';
 import RiskAssessmentForm    from "./components/health/RiskAssessmentForm.tsx";
+
 import { Toaster } from 'sonner';
 
 export function App() {

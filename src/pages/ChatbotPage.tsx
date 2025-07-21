@@ -7,6 +7,7 @@ interface Message {
   timestamp: Date;
 }
 const ChatbotPage = () => {
+  const baseUrl = import.meta.env.VITE_BASE_URL;
   const [messages, setMessages] = useState<Message[]>([{
     id: 1,
     text: "Hello! I'm your health assistant. How can I help you today?",
@@ -94,7 +95,7 @@ const ChatbotPage = () => {
     setIsTyping(true);
 
     try {
-      const response = await fetch('http://localhost:8080/api/v1/ml/chat', {
+      const response = await fetch(`${baseUrl}ml/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

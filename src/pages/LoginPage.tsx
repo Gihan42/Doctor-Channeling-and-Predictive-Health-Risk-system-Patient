@@ -3,7 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { UserIcon, LockIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
+
+
 const LoginPage = () => {
+  const baseUrl = import.meta.env.VITE_BASE_URL;
+
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
@@ -60,7 +64,7 @@ const LoginPage = () => {
         password: formData.password
       };
 
-      const response = await fetch('http://localhost:8080/api/v1/user/login', {
+      const response = await fetch(`${baseUrl}user/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -13,6 +13,7 @@ interface Appointment {
 }
 
 const DashboardHome = () => {
+  const baseUrl = import.meta.env.VITE_BASE_URL;
   const navigate = useNavigate();
   const [userName, setUserName] = useState('');
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
@@ -34,7 +35,7 @@ const DashboardHome = () => {
       }
 
       const response = await fetch(
-          `http://localhost:8080/api/v1/appointment/getAppointmentDetailsByPatientId?patientId=${patientId}`,
+          `${baseUrl}appointment/getAppointmentDetailsByPatientId?patientId=${patientId}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,

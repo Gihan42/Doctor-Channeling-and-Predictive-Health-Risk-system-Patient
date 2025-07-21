@@ -31,6 +31,7 @@ interface Appointment {
 }
 
 const AppointmentDetails = () => {
+  const baseUrl = import.meta.env.VITE_BASE_URL;
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
@@ -55,7 +56,7 @@ const AppointmentDetails = () => {
 
         // First, fetch all appointments for the patient
         const response = await fetch(
-            `http://localhost:8080/api/v1/appointment/getAppointmentDetailsByPatientId?patientId=${patientId}`,
+            `${baseUrl}appointment/getAppointmentDetailsByPatientId?patientId=${patientId}`,
             {
               headers: {
                 'Authorization': `Bearer ${token}`,
@@ -135,7 +136,7 @@ const AppointmentDetails = () => {
       }
 
       const response = await fetch(
-          `http://localhost:8080/api/v1/appointment/cancelAppointment`,
+          `${baseUrl}appointment/cancelAppointment`,
           {
             method: 'POST',
             headers: {
