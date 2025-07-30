@@ -65,7 +65,7 @@ const Footer = () => {
               </li>
               <li className="flex items-center">
                 <MailIcon className="h-4 w-4 mr-2 text-teal-500" />
-                <span>support@medicare.com</span>
+                <span>medicare768@gmail.com</span>
               </li>
               <li className="flex items-center">
                 <MapPinIcon className="h-4 w-4 mr-2 text-teal-500" />
