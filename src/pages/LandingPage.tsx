@@ -71,11 +71,10 @@ const LandingPage = () => {
     setReviewsError(null);
     
     try {
-      const response = await fetch(`${baseUrl}comments/getActiveReview`, {
+      const response = await fetch(`${baseUrl}comments/getAllReviews`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('jwt') || ''}`
         }
       });
 
