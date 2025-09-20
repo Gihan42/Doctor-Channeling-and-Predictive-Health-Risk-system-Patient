@@ -304,17 +304,17 @@ const DoctorChanneling = () => {
       }
 
       // Format date as YYYY-MM-DD
-      const formattedDate = date.toISOString().split('T')[0];
+      const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
 
-      const response = await fetch(
-          `${baseUrl}channeling/room/schedule?doctorId=${doctorId}&date=${formattedDate}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-      );
+    const response = await fetch(
+      `${baseUrl}channeling/room/schedule?doctorId=${doctorId}&dayOfWeek=${dayOfWeek}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
 
       if (!response.ok) {
         throw new Error('Failed to fetch available time slots');
@@ -392,7 +392,7 @@ const DoctorChanneling = () => {
       if (data.code === 200 && data.data) {
         const formattedCenters = data.data.map((center: any) => ({
     ...center,
-    medicleCenterId: center.medicleCenterId || center.id, // fallback
+    medicleCenterId: center.medicleCenterId || center.id, 
   }));
   setNearestCenters(formattedCenters);
   setShowNearestCenters(true);
