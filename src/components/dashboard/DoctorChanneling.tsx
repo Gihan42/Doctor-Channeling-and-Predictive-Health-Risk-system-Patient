@@ -390,8 +390,12 @@ const DoctorChanneling = () => {
 
       const data = await response.json();
       if (data.code === 200 && data.data) {
-        setNearestCenters(data.data);
-        setShowNearestCenters(true);
+        const formattedCenters = data.data.map((center: any) => ({
+    ...center,
+    medicleCenterId: center.medicleCenterId || center.id, // fallback
+  }));
+  setNearestCenters(formattedCenters);
+  setShowNearestCenters(true);
       } else {
         throw new Error(data.message || 'No nearest centers found');
       }
