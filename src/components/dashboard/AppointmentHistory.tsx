@@ -161,7 +161,6 @@ const AppointmentHistory = () => {
                     <div
                         key={index}
                         className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                        onClick={() => navigate(`/dashboard/appointment/${appointment.channelingRoomId}`)}
                     >
                       <div className="flex flex-wrap justify-between items-start gap-2">
                         <div>

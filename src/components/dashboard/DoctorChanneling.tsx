@@ -435,7 +435,6 @@ const DoctorChanneling = () => {
   };
 
   // Handle medical center selection
-// Handle medical center selection
   const handleMedicalCenterSelect = (medicleCenterId: number) => {
     console.log(medicleCenterId);
 
