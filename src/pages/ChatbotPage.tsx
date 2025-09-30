@@ -133,7 +133,8 @@ const ChatbotPage = () => {
       'vaccine', 'vaccination', 'screening', 'checkup', 'appointment',
       'emergency', 'clinic', 'physician', 'surgeon', 'nurse', 'patient',
       'prescription', 'therapy', 'recovery', 'rehab', 'mental', 'physical',
-      'exercise', 'diet', 'nutrition', 'weight', 'obesity', 'fit', 'fitness'
+      'exercise', 'diet', 'nutrition', 'weight', 'obesity', 'fit', 'fitness',
+      'cholesterol','diabetes'
     ];
 
     const isMedicalQuestion = medicalKeywords.some(keyword =>
